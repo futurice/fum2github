@@ -14,9 +14,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      library
-  exposed-modules:     Fum
+  exposed-modules:     Fum2GitHub.Fum
   -- other-modules:       
-  build-depends:       base
+  build-depends:       base, bytestring, case-insensitive, containers,
+                       http-conduit, json, text, transformers
   default-language:    Haskell2010
 
 executable fum2github
@@ -29,5 +30,5 @@ Test-Suite hspec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base, fum2github, hspec
+  build-depends:       base, fum2github, hspec, json
   default-language:    Haskell2010
