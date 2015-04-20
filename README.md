@@ -6,8 +6,7 @@
 ```bash
 cabal sandbox init
 cabal update
-cabal install --enable-tests
-cabal test
+cabal install --enable-tests && cabal test
 
 .cabal-sandbox/bin/fum2github http://api.fum.futurice.com/users/ «auth-token»
 ```

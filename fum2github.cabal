@@ -16,8 +16,9 @@ library
   hs-source-dirs:      library
   exposed-modules:     Fum2GitHub.Fum
   -- other-modules:       
-  build-depends:       base, bytestring, case-insensitive, containers,
-                       http-conduit, json, text, transformers
+  build-depends:       aeson, base, bytestring, case-insensitive, containers,
+                       http-conduit, text, transformers, unordered-containers,
+                       vector
   default-language:    Haskell2010
 
 executable fum2github
@@ -30,5 +31,5 @@ Test-Suite hspec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base, fum2github, hspec, json
+  build-depends:       aeson, base, fum2github, hspec, text
   default-language:    Haskell2010
