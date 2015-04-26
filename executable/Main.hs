@@ -3,13 +3,14 @@ import           System.Environment (getArgs)
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
 
+main :: IO ()
 main = do
-    args <- getArgs
-    case args of
-      [fumApiUsersUrl, authToken] -> printFumUsers fumApiUsersUrl authToken
-      _ -> do
-        hPutStrLn stderr "Usage: fum-api-users-url authToken"
-        exitWith $ ExitFailure 1
+  args <- getArgs
+  case args of
+    [fumApiUsersUrl, authToken] -> printFumUsers fumApiUsersUrl authToken
+    _ -> do
+      hPutStrLn stderr "Usage: fum-api-users-url authToken"
+      exitWith $ ExitFailure 1
 
 printFumUsers :: String -> String -> IO ()
 printFumUsers fumApiUsersUrl authToken = do
@@ -19,4 +20,4 @@ printFumUsers fumApiUsersUrl authToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        putStrLn . show . filter (not . null . Fum.github) $ users
+        print . filter (not . null . Fum.github) $ users
