@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Fum2GitHub.Fum (
     getAllUsers,
     User(User), username, github,
@@ -7,7 +8,6 @@ module Fum2GitHub.Fum (
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
@@ -24,8 +24,7 @@ import           Network.HTTP.Conduit (
 getHttp :: String -> String -> IO LBS.ByteString
 getHttp url authToken = do
     baseReq <- parseUrl url
-    let authHdr = (CI.mk . E.encodeUtf8 . T.pack $ "Authorization",
-                   E.encodeUtf8 . T.pack $ "Token " ++ authToken)
+    let authHdr = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
         req = baseReq { requestHeaders = authHdr : requestHeaders baseReq }
     body <- withManager $ \manager -> do
         resp <- httpLbs req manager
