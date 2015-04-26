@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
+import           Data.Traversable (traverse)
 import qualified Data.Vector as Vector
 import           Network.HTTP.Conduit (
     httpLbs,
@@ -79,16 +80,11 @@ instance Aeson.FromJSON User where
 userFromAPI :: Aeson.Value -> Either String User
 userFromAPI = parseEither Aeson.parseJSON
 
+
 -- Get all users from the FUM API.
 getAllUsers :: String -> String -> IO (Either String [User])
 getAllUsers usersUrl authToken = do
     resultsE <- getAPIAll usersUrl authToken
     return $ case resultsE of
       Left msg -> Left msg
-      Right results -> do
-        foldr foldUsersR (Right []) (map userFromAPI results)
-    where
-        foldUsersR :: Either String User -> Either String [User] -> Either String [User]
-        foldUsersR (Left msg) _ = Left msg
-        foldUsersR _ (Left msg) = Left msg
-        foldUsersR (Right u) (Right us) = Right (u:us)
+      Right results -> traverse userFromAPI results
