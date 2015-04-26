@@ -4,11 +4,15 @@
 
 ## Setup
 ```bash
-cabal sandbox init
 cabal update
-cabal install --enable-tests && cabal test
+cabal sandbox init
+cabal install --only-dependencies --enable-tests
+cabal configure --enable-tests
+cabal build
+cabal test
 
-.cabal-sandbox/bin/fum2github http://api.fum.futurice.com/users/ «auth-token»
+cabal run -- http://api.fum.futurice.com/users/ «auth-token»
+dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «auth-token»
 ```
 
 ## Copyright
