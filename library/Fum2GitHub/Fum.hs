@@ -5,8 +5,11 @@ module Fum2GitHub.Fum (
     userFromAPI,
 ) where
 
+import           Control.Applicative
 import           Control.Monad.IO.Class (liftIO)
+import           Data.Aeson ((.:))
 import qualified Data.Aeson as Aeson
+import           Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Text as T
@@ -68,27 +71,13 @@ getAPIAll url authToken = do
 
 data User = User { username :: String, github :: String } deriving (Show, Eq)
 
+instance Aeson.FromJSON User where
+  parseJSON = Aeson.withObject "User object" p
+    where p v = User <$> v .: "username"
+                     <*> v .: "github"
 
 userFromAPI :: Aeson.Value -> Either String User
-
-userFromAPI (Aeson.Object map) =
-    case jsonStrField map "username" of
-      Left msg -> Left msg
-      Right username -> case jsonStrField map "github" of
-        Left msg -> Left msg
-        Right github -> Right (User {username=username, github=github})
-
-userFromAPI x = Left ("Invalid FUM API user data: " ++ show x)
-
-
--- The String value of the json object's field, or Left errMsg.
-jsonStrField :: Aeson.Object -> String -> Either String String
-jsonStrField map fieldName =
-    case HMS.lookup (T.pack fieldName) map of
-      Nothing -> Left ("“" ++ fieldName ++ "” missing from " ++ show map)
-      Just (Aeson.String txt) -> Right (T.unpack txt)
-      Just v -> Left ("“" ++ fieldName ++ "” is not a string: " ++ show v)
-
+userFromAPI = parseEither Aeson.parseJSON
 
 -- Get all users from the FUM API.
 getAllUsers :: String -> String -> IO (Either String [User])
