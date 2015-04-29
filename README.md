@@ -15,6 +15,18 @@ cabal run -- http://api.fum.futurice.com/users/ «auth-token»
 dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «auth-token»
 ```
 
+
+## Deploy
+Install Ansible (e.g. in a Python virtual enviroment using `pip install`).
+
+Deploy to the machine in `ansible/hosts`, passing your remote username.
+The machine needs no prior setup, ansible will create the `fum2github` user
+and install the system packages it needs.
+Tested on Ubuntu 14.04 64-bit.
+```bash
+ansible-playbook ansible/playbook.yml -i ansible/hosts --ask-become-pass -v -u «remote-user»
+```
+
 ## Copyright
 
 Copyright © [Futurice](https://futurice/com),

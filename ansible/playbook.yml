@@ -1,0 +1,56 @@
+---
+
+# system setup: create user account and install packages
+- hosts: all
+  become: yes
+  become_user: root
+  tasks:
+    - name: create fum2github user
+      user: name=fum2github
+    - name: update packages
+      apt: update_cache=yes
+    - name: install packages
+      apt: "name={{item}} state=latest"
+      with_items:
+        - haskell-platform
+        - git
+
+# deploy master from repository
+- hosts: all
+  become: yes
+  become_user: fum2github
+  tasks:
+    - name: save deploy timestamp (YYYY-MM-DDTHH:MM:SSZ → YYYYMMDDTHHMMSSZ)
+      register: tstamp
+      shell: "echo {{ansible_date_time.iso8601}} | sed -e 's/[:-]//g'"
+    - name: clone git repository
+      git:
+        repo: "https://github.com/futurice/fum2github.git"
+        dest: "{{ansible_env.HOME}}/deploy-{{tstamp.stdout}}"
+
+    # Ubuntu 14.04's haskell-platform doesn't support sandboxes, so delete
+    # ~/.ghc and ~/.cabal. Some of this might be needed to reset clean state
+    # even with sandboxes.
+    - name: remove ~/.ghc and ~/.cabal
+      file: "path={{ansible_env.HOME}}/{{item}} state=absent"
+      with_items:
+        - .ghc
+        - .cabal
+    - name: cabal update
+      shell: cabal update
+    - name: cabal install and test
+      environment:
+        # put hspec-discover in the PATH
+        PATH: "{{ansible_env.PATH}}:{{ansible_env.HOME}}/.cabal/bin"
+      shell: "cabal install --enable-tests && cabal test"
+      args:
+        chdir: "{{ansible_env.HOME}}/deploy-{{tstamp.stdout}}"
+    - name: copy the executable from ~/.cabal/bin/
+      shell: "cp {{ansible_env.HOME}}/.cabal/bin/fum2github ."
+      args:
+        chdir: "{{ansible_env.HOME}}/deploy-{{tstamp.stdout}}/"
+    - name: set the ~/fum2github symlink to this deployment
+      file:
+        path: "{{ansible_env.HOME}}/fum2github"
+        src: "{{ansible_env.HOME}}/deploy-{{tstamp.stdout}}"
+        state: link
