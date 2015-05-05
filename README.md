@@ -11,8 +11,10 @@ cabal configure --enable-tests
 cabal build
 cabal test
 
-cabal run -- http://api.fum.futurice.com/users/ «auth-token»
-dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «auth-token»
+Create a personal GitHub [access token](https://github.com/settings/tokens/new).
+
+cabal run -- http://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
 ```
 
 ## Copyright

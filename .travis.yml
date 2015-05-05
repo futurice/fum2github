@@ -11,10 +11,6 @@ matrix:
   allow_failures:
    - env: GHCVER=head CABALVER=head
 
-branches:
-  only:
-    - master
-
 # Note: the distinction between `before_install` and `install` is not
 #       important.
 before_install:

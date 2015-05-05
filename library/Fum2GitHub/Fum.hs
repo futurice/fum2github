@@ -5,8 +5,7 @@ module Fum2GitHub.Fum (
     userFromAPI,
 ) where
 
-import           Control.Applicative
-import           Control.Monad.IO.Class (liftIO)
+import           Control.Applicative ((<*>), (<$>))
 import           Data.Aeson ((.:))
 import qualified Data.Aeson as Aeson
 import           Data.Aeson.Types (parseEither)
@@ -27,19 +26,19 @@ import           Network.HTTP.Conduit (
 -- Get the response body from url using authToken.
 getHttp :: String -> String -> IO LBS.ByteString
 getHttp url authToken = do
+    putStrLn url -- debug logging
     baseReq <- parseUrl url
     let authHdr = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
         req = baseReq { requestHeaders = authHdr : requestHeaders baseReq }
     body <- withManager $ \manager -> do
         resp <- httpLbs req manager
-        liftIO . return $ responseBody resp
+        return $ responseBody resp
     return body
 
 
 -- Get all JSON results from url using authToken, following all pages to end.
 getAPIAll :: String -> String -> IO (Either String [Aeson.Value])
 getAPIAll url authToken = do
-    putStrLn url -- debug logging
     lbsBody <- getHttp url authToken
     case Aeson.eitherDecode lbsBody :: Either String Aeson.Object of
       Left msg -> return (Left msg)
