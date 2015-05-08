@@ -10,7 +10,7 @@ main = do
   case args of
     [fumApiUsersUrl, fumAuthToken, gitHubOrg, gitHubOAuthToken] -> do
       printFumUsers fumApiUsersUrl fumAuthToken
-      printGitHubUsers gitHubOrg gitHubOAuthToken
+      printGitHubUsers gitHubOrg (GitHub.OAuthToken gitHubOAuthToken)
     _ -> do
       hPutStrLn stderr "Usage: fum-api-users-url fumAuthToken gitHubOrg gitHubOAuthToken"
       exitWith $ ExitFailure 1
@@ -26,7 +26,7 @@ printFumUsers fumApiUsersUrl authToken = do
       Right users -> do
         print . filter (not . null . Fum.github) $ users
 
-printGitHubUsers :: String -> String -> IO ()
+printGitHubUsers :: String -> GitHub.OAuthToken -> IO ()
 printGitHubUsers orgName oAuthToken = do
     usersE <- GitHub.getOrgMembers orgName oAuthToken
     case usersE of
@@ -34,4 +34,4 @@ printGitHubUsers orgName oAuthToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        print users
+        print $ map GitHub.getOrgMember users

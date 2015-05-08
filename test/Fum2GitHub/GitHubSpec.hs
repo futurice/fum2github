@@ -19,4 +19,4 @@ spec = do
            ("Link", "<urlE>; rel=\"first\", <urlF>; rel=\"next\", <urlG>; rel=\"prev\", <urlH>; rel=\"next\""),
            ("Link", "<urlI>; rel=\"next\"")
            ]
-      GitHub.getNextUrl hdrs `shouldBe` Just "urlF"
+      GitHub.getNextUrl hdrs `shouldBe` Just (GitHub.URL "urlF")

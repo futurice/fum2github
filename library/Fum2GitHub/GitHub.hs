@@ -2,8 +2,12 @@
 module Fum2GitHub.GitHub (
     getNextUrl,
     getOrgMembers,
+    OAuthToken(OAuthToken),
+    OrgMember(getOrgMember),
+    URL(URL),
 ) where
 
+import           Control.Applicative ((<$>))
 import           Data.Aeson ((.:))
 import qualified Data.Aeson as Aeson
 import           Data.Aeson.Types (parseEither)
@@ -24,14 +28,20 @@ import           Network.HTTP.Types.Header (ResponseHeaders)
 import           Text.Regex (mkRegex, matchRegex)
 
 
+newtype URL = URL { getURL :: String } deriving (Eq, Show)
+
+newtype OAuthToken = OAuthToken { getOAuthToken :: String }
+
+
 -- Get the response body and headers from url using oAuthToken.
-getHttp :: String -> String -> IO (LBS.ByteString, ResponseHeaders)
+getHttp :: URL -> OAuthToken -> IO (LBS.ByteString, ResponseHeaders)
 getHttp url oAuthToken = do
-    putStrLn url -- debug logging
-    baseReq <- parseUrl url
+    putStrLn $ getURL url -- debug logging
+    baseReq <- parseUrl $ getURL url
     let agHdr = ("User-Agent", "https://github.com/futurice/fum2github")
-        authReq = applyBasicAuth (E.encodeUtf8 . T.pack $ oAuthToken)
-          "x-oauth-basic" baseReq
+        authReq = applyBasicAuth
+                    (E.encodeUtf8 . T.pack . getOAuthToken $ oAuthToken)
+                    "x-oauth-basic" baseReq
         req = authReq { requestHeaders = agHdr : requestHeaders authReq }
     withManager $ \manager -> do
         resp <- httpLbs req manager
@@ -46,7 +56,7 @@ Link: <https://some-url>; rel="next", <https://some-url>; rel="last"
 We allow multiple ‘Link’ headers, each with one or more comma-separated values
 and return the first matching value.
 -}
-getNextUrl :: ResponseHeaders -> Maybe String
+getNextUrl :: ResponseHeaders -> Maybe URL
 getNextUrl headers =
     foldr foldFunc Nothing matches
     where
@@ -54,12 +64,14 @@ getNextUrl headers =
       strVals = map (T.unpack . E.decodeUtf8 . snd) linkHeaders
       re = mkRegex "<([^>]+)>; rel=\"next\""
       matches = map (matchRegex re) strVals
-      foldFunc (Just [x]) _ = Just x
+
+      foldFunc :: Maybe [String] -> Maybe URL -> Maybe URL
+      foldFunc (Just [x]) _ = Just (URL x)
       foldFunc _ x = x
 
 
 -- Get all JSON results from url using oAuthToken, following all pages to end.
-getAll :: String -> String -> IO (Either String [Aeson.Value])
+getAll :: URL -> OAuthToken -> IO (Either String [Aeson.Value])
 getAll url oAuthToken = do
     (body, hdrs) <- getHttp url oAuthToken
     case Aeson.eitherDecode body :: Either String Aeson.Array of
@@ -75,16 +87,19 @@ getAll url oAuthToken = do
               Right tail -> return $ Right (arr ++ tail)
 
 
+newtype OrgMember = OrgMember { getOrgMember :: String }
+
+instance Aeson.FromJSON OrgMember where
+  parseJSON = Aeson.withObject "Org Member object" p
+    where p v = OrgMember <$> v .: "login"
+
+
 -- Get all members of the organisation.
-getOrgMembers :: String -> String -> IO (Either String [String])
+getOrgMembers :: String -> OAuthToken -> IO (Either String [OrgMember])
 getOrgMembers orgName oAuthToken = do
-    let url = "https://api.github.com/orgs/" ++ orgName ++ "/members"
+    let url = URL $ "https://api.github.com/orgs/" ++ orgName ++ "/members"
     resultsE <- getAll url oAuthToken
     case resultsE of
       Left msg -> return $ Left msg
       Right results -> do
-        return $ traverse getMember results
-        where
-          getMember :: Aeson.Value -> Either String String
-          getMember = parseEither $
-            Aeson.withObject "GitHub Org Member" (.: "login")
+        return $ traverse (parseEither Aeson.parseJSON) results
