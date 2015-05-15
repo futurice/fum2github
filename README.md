@@ -17,6 +17,23 @@ cabal run -- http://api.fum.futurice.com/users/ «fum-token» futurice «github-
 dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
 ```
 
+
+## Deploy
+Install Ansible (e.g. in a Python virtual enviroment using `pip install`).
+
+Set the FUM and GitHub tokens in `ansible/secrets/yml`:
+```bash
+cp ansible/secrets.yml.example ansible/secrets.yml
+```
+
+Deploy to the machine in `ansible/hosts`, passing your remote username.
+The machine only needs Docker installed (because installation varies with Linux
+distribution and user preference), everything else (e.g. creating the
+`fum2github` user if it's not present) is done by ansible.
+```bash
+ansible-playbook ansible/playbook.yml -i ansible/hosts --ask-become-pass -v -u «remote-user»
+```
+
 ## Copyright
 
 Copyright © [Futurice](https://futurice/com),

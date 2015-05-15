@@ -1,3 +1,5 @@
+/ansible/secrets.yml
+
 /.cabal-sandbox/
 /cabal.sandbox.config
 /dist/

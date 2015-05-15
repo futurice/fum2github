@@ -1,0 +1,44 @@
+---
+
+# system setup: create user account and install packages
+- hosts: all
+  become: yes
+  become_user: root
+  tasks:
+    - name: create fum2github user
+      user: name=fum2github
+    - name: update apt cache
+      apt: update_cache=yes
+    - name: install packages
+      apt: "name={{item}} state=latest"
+      with_items:
+        - git
+        - htop
+
+# deploy master from repository
+- hosts: all
+  become: yes
+  become_user: fum2github
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: save deploy timestamp (YYYY-MM-DDTHH:MM:SSZ → YYYYMMDDTHHMMSSZ)
+      register: tstamp
+      shell: "echo {{ansible_date_time.iso8601}} | sed -e 's/[:-]//g'"
+    - name: clone git repository
+      git:
+        repo: "https://github.com/futurice/fum2github.git"
+        dest: "/tmp/fum2github-{{tstamp.stdout}}"
+    - name: build Docker image
+      shell: "docker build --pull -t fum2github/fum2github ."
+      args:
+        chdir: "/tmp/fum2github-{{tstamp.stdout}}"
+      become: yes
+      become_user: root
+    - name: remove cloned repository
+      shell: "rm -rf /tmp/fum2github-{{tstamp.stdout}}"
+    - name: install crontab for root
+      cron: name="fum2github" minute="0" hour="*/4"
+            job="docker run --rm fum2github/fum2github http://api.fum.futurice.com/users/ {{FUM_TOKEN}} futurice {{GITHUB_TOKEN}} >{{ansible_env.HOME}}/report 2>&1"
+      become: yes
+      become_user: root
