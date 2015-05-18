@@ -10,11 +10,13 @@ cabal install --only-dependencies --enable-tests
 cabal configure --enable-tests
 cabal build
 cabal test
+```
 
-Create a personal GitHub [access token](https://github.com/settings/tokens/new).
+Create a personal GitHub access token: https://github.com/settings/tokens/new
 
-cabal run -- http://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
-dist/build/fum2github/fum2github http://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+```bash
+cabal run -- https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+dist/build/fum2github/fum2github https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
 ```
 
 

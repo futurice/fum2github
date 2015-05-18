@@ -41,6 +41,6 @@
         state: "absent"
     - name: install crontab for root
       cron: name="fum2github" minute="0" hour="*/4"
-            job="docker run --rm fum2github/fum2github http://api.fum.futurice.com/users/ {{FUM_TOKEN}} futurice {{GITHUB_TOKEN}} >{{ansible_env.HOME}}/report 2>&1"
+            job="docker run --rm fum2github/fum2github https://api.fum.futurice.com/users/ {{FUM_TOKEN}} futurice {{GITHUB_TOKEN}} >{{ansible_env.HOME}}/report 2>&1"
       become: yes
       become_user: root
