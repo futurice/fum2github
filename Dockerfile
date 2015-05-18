@@ -1,7 +1,5 @@
 FROM phadej/ghc
 
-WORKDIR /
-RUN apt-get update && apt-get install -y git
 COPY . /tmp/f2g-repo
 
 WORKDIR /tmp/f2g-repo
