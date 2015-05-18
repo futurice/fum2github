@@ -4,7 +4,6 @@ module Fum2GitHub.GitHub (
     getOrgMembers,
     OAuthToken(OAuthToken),
     OrgMember(getOrgMember),
-    URL(URL),
 ) where
 
 import           Control.Applicative ((<$>))
@@ -16,6 +15,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import           Data.Traversable (traverse)
 import qualified Data.Vector as Vector
+import           Fum2GitHub.Util (
+    URL(URL, getURL))
 import           Network.HTTP.Conduit (
     applyBasicAuth,
     httpLbs,
@@ -27,8 +28,6 @@ import           Network.HTTP.Conduit (
 import           Network.HTTP.Types.Header (ResponseHeaders)
 import           Text.Regex (mkRegex, matchRegex)
 
-
-newtype URL = URL { getURL :: String } deriving (Eq, Show)
 
 newtype OAuthToken = OAuthToken { getOAuthToken :: String }
 
