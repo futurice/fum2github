@@ -31,11 +31,10 @@ getAPIAll request getNextReq getResults = do
     resp <- getHttp request
     case getResults resp of
       Left msg -> return (Left msg)
-      Right results ->
-        case getNextReq resp of
-          Nothing -> return (Right results)
-          Just nextReq -> do
-            tailE <- getAPIAll nextReq getNextReq getResults
-            case tailE of
-              Left msg -> return (Left msg)
-              Right tail -> return . Right $ (results ++ tail)
+      Right results -> do
+        tailE <- case getNextReq resp of
+                   Nothing -> return (Right [])
+                   Just nextReq -> getAPIAll nextReq getNextReq getResults
+        case tailE of
+          Left msg -> return (Left msg)
+          Right tail -> return . Right $ results ++ tail
