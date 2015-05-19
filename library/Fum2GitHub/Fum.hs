@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Fum2GitHub.Fum (
+    AuthToken(AuthToken),
     getAllUsers,
     User(User), username, github,
     userFromAPI,
@@ -15,58 +16,56 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import           Data.Traversable (traverse)
 import qualified Data.Vector as Vector
+import           Fum2GitHub.Util (
+    getAPIAll,
+    URL(URL, getURL))
 import           Network.HTTP.Conduit (
-    httpLbs,
     parseUrl,
+    Request,
     requestHeaders,
-    responseBody,
-    withManager)
+    Response,
+    responseBody)
 
 
--- Get the response body from url using authToken.
-getHttp :: String -> String -> IO LBS.ByteString
-getHttp url authToken = do
-    putStrLn url -- debug logging
-    baseReq <- parseUrl url
-    let authHdr = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
-        req = baseReq { requestHeaders = authHdr : requestHeaders baseReq }
-    body <- withManager $ \manager -> do
-        resp <- httpLbs req manager
-        return $ responseBody resp
-    return body
+newtype AuthToken = AuthToken { getAuthToken :: String }
 
 
--- Get all JSON results from url using authToken, following all pages to end.
-getAPIAll :: String -> String -> IO (Either String [Aeson.Value])
-getAPIAll url authToken = do
-    lbsBody <- getHttp url authToken
-    case Aeson.eitherDecode lbsBody :: Either String Aeson.Object of
-      Left msg -> return (Left msg)
-      Right map -> do
-        let resultsE = case HMS.lookup (T.pack "results") map of
-                         Nothing -> Left "“results” missing in FUM response"
-                         Just v -> case v of
-                                     Aeson.Array a -> Right (Vector.toList a)
-                                     _ -> Left "FUM “results” is not an array"
-        case resultsE of
-          Left msg -> return resultsE
-          Right results -> do
-            let nextE = case HMS.lookup (T.pack "next") map of
-                      Nothing -> Left "“next” missing in FUM response"
-                      Just v -> case v of
-                                  Aeson.String txt -> Right (T.unpack txt)
-                                  Aeson.Null -> Right ""
-                                  _ -> Left "FUM “next” is not a string"
-            case nextE of
-              Left msg -> return (Left msg)
-              Right next -> do
-                tailE <- if null next then
-                    return (Right [])
-                else
-                    getAPIAll next authToken
-                case tailE of
-                  Left msg -> return (Left msg)
-                  Right tail -> return (Right (results ++ tail))
+-- TODO: return the error message e.g. "Invalid URL" instead of just Nothing.
+prepareRequest :: URL -> AuthToken -> Maybe Request
+prepareRequest url token = do
+    baseReq <- parseUrl $ getURL url
+    let tokStr = getAuthToken token
+        authHdr = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ tokStr)
+    return baseReq { requestHeaders = authHdr : requestHeaders baseReq }
+
+
+getAPIResults :: Response LBS.ByteString -> Either String [Aeson.Value]
+getAPIResults resp =
+    case Aeson.eitherDecode (responseBody resp) :: Either String Aeson.Object of
+      Left msg -> Left msg
+      Right map ->
+        case HMS.lookup (T.pack "results") map of
+          Nothing -> Left "“results” missing in FUM response"
+          Just v -> case v of
+                      Aeson.Array a -> Right (Vector.toList a)
+                      _ -> Left "FUM “results” is not an array"
+
+
+-- TODO: differentiate between "there was an error" and "there is no next URL"
+getAPINext :: AuthToken -> Response LBS.ByteString -> Maybe Request
+getAPINext token resp =
+    case Aeson.eitherDecode (responseBody resp) :: Either String Aeson.Object of
+      Left msg -> Nothing
+      Right map ->
+        case HMS.lookup (T.pack "next") map of
+          Nothing -> Nothing -- error: "“next” missing in FUM response"
+          Just v -> case v of
+            Aeson.String txt ->
+              case prepareRequest (URL . T.unpack $ txt) token of
+                Nothing -> Nothing -- error (e.g. Invalid URL format)
+                Just req -> Just req
+            Aeson.Null -> Nothing -- ok: we've reached the end
+            _ -> Nothing -- error: "FUM “next” is not a string"
 
 
 data User = User { username :: String, github :: String } deriving (Show, Eq)
@@ -81,9 +80,12 @@ userFromAPI = parseEither Aeson.parseJSON
 
 
 -- Get all users from the FUM API.
-getAllUsers :: String -> String -> IO (Either String [User])
-getAllUsers usersUrl authToken = do
-    resultsE <- getAPIAll usersUrl authToken
-    return $ case resultsE of
-      Left msg -> Left msg
-      Right results -> traverse userFromAPI results
+getAllUsers :: URL -> AuthToken -> IO (Either String [User])
+getAllUsers usersUrl token = do
+    case prepareRequest usersUrl token of
+      Nothing -> return $ Left "error preparing FUM HTTP request"
+      Just req -> do
+        resultsE <- getAPIAll req (getAPINext token) getAPIResults
+        return $ case resultsE of
+          Left msg -> Left msg
+          Right results -> traverse userFromAPI results
