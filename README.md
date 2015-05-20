@@ -2,7 +2,7 @@
 
 # Compare Futurice FUM and GitHub Organization users
 
-## Setup
+# Setup
 ```bash
 cabal update
 cabal sandbox init
@@ -20,23 +20,49 @@ dist/build/fum2github/fum2github https://api.fum.futurice.com/users/ «fum-token
 ```
 
 
-## Deploy
+# Deploy
+
+This clones the repository from GitHub (it does not use your local repository)
+and deploys the `master` branch.
+You can select a different `DEPLOY_BRANCH` in `ansible/playbook.yml`
+or by passing `-e DEPLOY_BRANCH=mybranch` to the `ansible-playbook` command.
+
 Install Ansible (e.g. in a Python virtual enviroment using `pip install`).
+
+The machine we are deploying to only needs Docker installed
+(because installation varies with Linux distribution and user preference),
+everything else (e.g. creating the `fum2github` user if it's not present)
+is done by Ansible.
 
 Set the FUM and GitHub tokens in `ansible/secrets/yml`:
 ```bash
 cp ansible/secrets.yml.example ansible/secrets.yml
 ```
 
-Deploy to the machine in `ansible/hosts`, passing your remote username.
-The machine only needs Docker installed (because installation varies with Linux
-distribution and user preference), everything else (e.g. creating the
-`fum2github` user if it's not present) is done by ansible.
+## Production
+
 ```bash
-ansible-playbook ansible/playbook.yml -i ansible/hosts --ask-become-pass -v -u «remote-user»
+ansible-playbook ansible/playbook.yml -i ansible/production --ask-become-pass -v -u «remote-username»
 ```
 
-## Copyright
+## Local (e.g. for testing)
+
+You can use the `Vagrantfile` to create a VM and deploy to it.
+It assumes your public SSH key is in `~/.ssh/id_rsa.pub`
+(it's copied into the VM user's `authorized_keys` file),
+sets the RAM size and number of CPUs
+(the cabal build is faster with more CPUs).
+You may want to tweak these settings.
+
+```bash
+vagrant up
+ansible-playbook ansible/playbook.yml -i ansible/local --ask-become-pass -v -u vagrant
+```
+
+Ansible will ask for the SUDO password which is `vagrant`.
+
+
+# Copyright
 
 Copyright © [Futurice](https://futurice/com),
 published under the BSD 3-clause license.

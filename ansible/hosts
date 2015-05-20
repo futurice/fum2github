@@ -1,4 +1,0 @@
-detissus.futurice.com
-
-# for testing locally, e.g. with Vagrant
-#localhost ansible_ssh_port=2222

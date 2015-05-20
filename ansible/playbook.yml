@@ -21,14 +21,23 @@
   become_user: fum2github
   vars_files:
     - secrets.yml
+  vars:
+    DEPLOY_BRANCH: "master"
   tasks:
     - name: save deploy timestamp (YYYY-MM-DDTHH:MM:SSZ → YYYYMMDDTHHMMSSZ)
       register: tstamp
       shell: "echo {{ansible_date_time.iso8601}} | sed -e 's/[:-]//g'"
+    # can't add {{DEPLOY_BRANCH}} in the task name because it's not expanded
     - name: clone git repository
       git:
         repo: "https://github.com/futurice/fum2github.git"
         dest: "/tmp/fum2github-{{tstamp.stdout}}"
+        # The ‘--’ disambiguates that we mean a branch (or ‘tree-ish’).
+        # If there is no branch named ‘test’,
+        # ‘git checkout test --’ fails but
+        # ‘git checkout test’ just checks out the ‘test’ directory and stays
+        # on master.
+        version: "{{DEPLOY_BRANCH}} --"
     - name: build Docker image
       shell: "docker build --pull -t fum2github/fum2github ."
       args:
