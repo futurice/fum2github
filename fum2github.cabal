@@ -27,8 +27,8 @@ library
                        vector
   default-language:    Haskell2010
 
-executable fum2github
-  hs-source-dirs:      executable
+executable checker
+  hs-source-dirs:      checker
   main-is:             Main.hs
   build-depends:       base, fum2github, optparse-applicative
   default-language:    Haskell2010

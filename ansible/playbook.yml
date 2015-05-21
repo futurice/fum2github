@@ -12,44 +12,102 @@
     - name: install packages
       apt: "name={{item}} state=latest"
       with_items:
+        - apache2
         - git
         - htop
+    - name: enable proxy_http Apache module
+      shell: "a2enmod proxy_http"
 
-# deploy master from repository
+# remove cron entries, stop and remove containers
 - hosts: all
   become: yes
-  become_user: fum2github
+  become_user: root
+  tasks:
+    - name: "remove crontab entry: fum2github/checker"
+      cron: name="fum2github/checker" state="absent"
+    - name: "stop then delete containers: checker, web"
+      # ‘stop’ and ‘rm’ have a non-zero exit code if the containers aren't
+      # running or don't exist, respectively.
+      shell: "docker stop fum2github_checker fum2github_web || true &&
+              docker rm -f fum2github_checker fum2github_web || true"
+
+# deploy {{DEPLOY_BRANCH}} from the repository on GitHub
+- hosts: all
+  become: yes
+  become_user: root
   vars_files:
     - secrets.yml
   vars:
     DEPLOY_BRANCH: "master"
+    DATA_DIR: "/home/fum2github/data"
   tasks:
     - name: save deploy timestamp (YYYY-MM-DDTHH:MM:SSZ → YYYYMMDDTHHMMSSZ)
       register: tstamp
       shell: "echo {{ansible_date_time.iso8601}} | sed -e 's/[:-]//g'"
-    # can't add {{DEPLOY_BRANCH}} in the task name because it's not expanded
+    - name: save temporary repository path
+      register: repo
+      shell: "echo -n /tmp/fum2github-{{tstamp.stdout}}"
+    - name: ensure data directory exists
+      become: yes
+      become_user: fum2github
+      file: path="{{DATA_DIR}}" state=directory
+    # can't put {{DEPLOY_BRANCH}} in the task name because it's not expanded
     - name: clone git repository
+      become: yes
+      become_user: fum2github
       git:
         repo: "https://github.com/futurice/fum2github.git"
-        dest: "/tmp/fum2github-{{tstamp.stdout}}"
+        dest: "{{repo.stdout}}"
         # The ‘--’ disambiguates that we mean a branch (or ‘tree-ish’).
         # If there is no branch named ‘test’,
         # ‘git checkout test --’ fails but
-        # ‘git checkout test’ just checks out the ‘test’ directory and stays
-        # on master.
+        # ‘git checkout test’ just checks out the ‘test’ directory on master.
         version: "{{DEPLOY_BRANCH}} --"
-    - name: build Docker image
-      shell: "docker build --pull -t fum2github/fum2github ."
-      args:
-        chdir: "/tmp/fum2github-{{tstamp.stdout}}"
-      become: yes
-      become_user: root
+
+    - name: copy Apache config file
+      shell: "cp {{repo.stdout}}/ansible/010-fum2github.conf
+              /etc/apache2/sites-available"
+    - name: symlink to Apache config in sites-available/ from sites-enabled/
+      file: path=/etc/apache2/sites-enabled/010-fum2github.conf state=link
+            src=../sites-available/010-fum2github.conf
+    - name: restart Apache
+      service: name=apache2 state=restarted
+
+    - name: "remove docker ‘:next’ images: checker, web"
+      # ‘rmi’ returns a non-zero exit code if some images don't exist
+      shell: "docker rmi fum2github/checker:next fum2github/web:next || true"
+
+    - name: "build Docker image fum2github/checker:next"
+      shell: "docker build --force-rm --pull -t fum2github/checker:next
+              -f {{repo.stdout}}/checker.dockerfile {{repo.stdout}}"
+
+    - name: "build Docker image fum2github/web:next"
+      shell: "docker build --force-rm --pull -t fum2github/web:next
+              -f {{repo.stdout}}/web.dockerfile {{repo.stdout}}"
+
     - name: remove cloned repository
-      file:
-        path: "/tmp/fum2github-{{tstamp.stdout}}"
-        state: "absent"
-    - name: install crontab for root
-      cron: name="fum2github" minute="0" hour="*/4"
-            job="docker run --rm fum2github/fum2github https://api.fum.futurice.com/users/ {{FUM_TOKEN}} futurice {{GITHUB_TOKEN}} >{{ansible_env.HOME}}/report 2>&1"
       become: yes
-      become_user: root
+      become_user: fum2github
+      file: path="{{repo.stdout}}" state=absent
+
+    - name: "remove ‘:latest’ docker images: checker, web"
+      shell: "docker rmi fum2github/checker:latest fum2github/web:latest ||
+              true"
+
+    - name: "tag ‘:next’ docker images as :latest: checker, web"
+      shell: "docker tag fum2github/checker:next fum2github/checker:latest &&
+              docker tag fum2github/web:next fum2github/web:latest"
+
+    - name: "remove ‘:next’ Docker images: checker, web"
+      shell: "docker rmi fum2github/checker:next fum2github/web:next"
+
+    - name: "install crontab: checker"
+      cron: name="fum2github/checker" minute="0" hour="*/4"
+            job="docker run --name=fum2github_checker --rm fum2github/checker
+                 https://api.fum.futurice.com/users/ {{FUM_TOKEN}}
+                 futurice {{GITHUB_TOKEN}} >{{DATA_DIR}}/report 2>&1"
+    - name: "start container: web"
+      shell: "docker run --name=fum2github_web -d --restart=always
+              -v {{DATA_DIR}}:/usr/local/apache2/htdocs
+              -p 127.0.0.1:3001:80
+              fum2github/web"

@@ -2,6 +2,17 @@
 
 # Compare Futurice FUM and GitHub Organization users
 
+# Structure
+
+The server setup uses Docker containers.
+
+The `checker` cron job compares FUM and GitHub users.
+Its output is in a `data/` directory.
+
+The `web` container serves `data/` through port 3001.
+Ansible configures the server's Apache to forward requests for
+`[dev.]fum2github.futurice.com` to the `web` container.
+
 # Setup
 ```bash
 cabal update
@@ -16,7 +27,7 @@ Create a personal GitHub access token: https://github.com/settings/tokens/new
 
 ```bash
 cabal run -- https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
-dist/build/fum2github/fum2github https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+dist/build/checker/checker https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
 ```
 
 
@@ -60,6 +71,11 @@ ansible-playbook ansible/playbook.yml -i ansible/local --ask-become-pass -v -u v
 ```
 
 Ansible will ask for the SUDO password which is `vagrant`.
+
+Make `dev.fum2github.futurice.com` point to `127.0.0.1` e.g. in `/etc/hosts`.
+`Vagrantfile` forwards local port 3000 to its internal port 80:
+
+http://dev.fum2github.futurice.com:3000/
 
 
 # Copyright

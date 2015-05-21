@@ -11,9 +11,10 @@ RUN rm -f cabal.config \
   && cabal configure --enable-tests \
   && cabal build \
   && cabal test \
-  && cp dist/build/fum2github/fum2github /bin/
+  && mkdir /fum2github \
+  && cp dist/build/checker/checker /fum2github/
 
 WORKDIR /
 RUN rm -rf /tmp/f2g-repo
 
-ENTRYPOINT ["/bin/fum2github"]
+ENTRYPOINT ["/fum2github/checker"]
