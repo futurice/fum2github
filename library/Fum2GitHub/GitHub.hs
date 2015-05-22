@@ -16,34 +16,26 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import           Data.Traversable (traverse)
 import qualified Data.Vector as Vector
-import           Network.HTTP.Conduit (
-    applyBasicAuth,
-    httpLbs,
-    parseUrl,
-    requestHeaders,
-    responseBody,
-    responseHeaders,
-    withManager)
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header (ResponseHeaders)
 import           Text.Regex (mkRegex, matchRegex)
 
-
 newtype URL = URL { getURL :: String } deriving (Eq, Show)
 
-newtype OAuthToken = OAuthToken { getOAuthToken :: String }
-
+newtype OAuthToken = OAuthToken { getOAuthToken :: String } deriving (Eq, Show)
 
 -- Get the response body and headers from url using oAuthToken.
 getHttp :: URL -> OAuthToken -> IO (LBS.ByteString, ResponseHeaders)
 getHttp url oAuthToken = do
-    putStrLn $ getURL url -- debug logging
+    putStrLn $ "GitHub GET: " ++ getURL url -- debug logging
     baseReq <- parseUrl $ getURL url
-    let agHdr = ("User-Agent", "https://github.com/futurice/fum2github")
+    let userAgentHeader = ("User-Agent", "https://github.com/futurice/fum2github")
         authReq = applyBasicAuth
                     (E.encodeUtf8 . T.pack . getOAuthToken $ oAuthToken)
                     "x-oauth-basic" baseReq
-        req = authReq { requestHeaders = agHdr : requestHeaders authReq }
-    withManager $ \manager -> do
+        req = authReq { requestHeaders = userAgentHeader : requestHeaders authReq }
+    withManager tlsManagerSettings $ \manager -> do
         resp <- httpLbs req manager
         return (responseBody resp, responseHeaders resp)
 
@@ -77,6 +69,7 @@ getAll url oAuthToken = do
     case Aeson.eitherDecode body :: Either String Aeson.Array of
       Left msg -> return $ Left msg
       Right arrJ -> do
+        print arrJ
         let arr = Vector.toList arrJ
         case getNextUrl hdrs of
           Nothing -> return $ Right arr
