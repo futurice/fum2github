@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 module Fum2GitHub.GitHub (
     getNextUrl,
     getOrgMembers,
@@ -7,15 +8,12 @@ module Fum2GitHub.GitHub (
     URL(URL),
 ) where
 
-import           Control.Applicative ((<$>))
-import           Data.Aeson ((.:))
-import qualified Data.Aeson as Aeson
-import           Data.Aeson.Types (parseEither)
+import           Control.Applicative
+import           Control.Monad.Trans.Except
+import           Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
-import           Data.Traversable (traverse)
-import qualified Data.Vector as Vector
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header (ResponseHeaders)
@@ -39,7 +37,6 @@ getHttp url oAuthToken = do
         resp <- httpLbs req manager
         return (responseBody resp, responseHeaders resp)
 
-
 {-
 Get the URL with rel="next" from the Link response header.
 
@@ -61,24 +58,18 @@ getNextUrl headers =
       foldFunc (Just [x]) _ = Just (URL x)
       foldFunc _ x = x
 
+getSingle :: URL -> OAuthToken -> ExceptT String IO ([OrgMember], Maybe URL)
+getSingle url authToken = ExceptT $ do
+  (body, hdrs) <- getHttp url authToken
+  let nextUrl = getNextUrl hdrs
+  return $ (,nextUrl) <$> eitherDecode body
 
--- Get all JSON results from url using oAuthToken, following all pages to end.
-getAll :: URL -> OAuthToken -> IO (Either String [Aeson.Value])
-getAll url oAuthToken = do
-    (body, hdrs) <- getHttp url oAuthToken
-    case Aeson.eitherDecode body :: Either String Aeson.Array of
-      Left msg -> return $ Left msg
-      Right arrJ -> do
-        print arrJ
-        let arr = Vector.toList arrJ
-        case getNextUrl hdrs of
-          Nothing -> return $ Right arr
-          Just nextUrl -> do
-            tailE <- getAll nextUrl oAuthToken
-            case tailE of
-              Left msg -> return $ Left msg
-              Right tail -> return $ Right (arr ++ tail)
-
+getAll :: URL -> OAuthToken -> ExceptT String IO [OrgMember]
+getAll url authToken = do
+  (members, nextUrl) <- getSingle url authToken
+  case nextUrl of
+    Nothing       -> return members
+    Just nextUrl' -> (members ++) <$> getAll nextUrl' authToken
 
 newtype OrgMember = OrgMember { getOrgMember :: String }
 
@@ -86,13 +77,7 @@ instance Aeson.FromJSON OrgMember where
   parseJSON = Aeson.withObject "Org Member object" p
     where p v = OrgMember <$> v .: "login"
 
-
 -- Get all members of the organisation.
 getOrgMembers :: String -> OAuthToken -> IO (Either String [OrgMember])
-getOrgMembers orgName oAuthToken = do
-    let url = URL $ "https://api.github.com/orgs/" ++ orgName ++ "/members"
-    resultsE <- getAll url oAuthToken
-    case resultsE of
-      Left msg -> return $ Left msg
-      Right results -> do
-        return $ traverse (parseEither Aeson.parseJSON) results
+getOrgMembers orgName oAuthToken = runExceptT $ getAll url oAuthToken
+  where url = URL $ "https://api.github.com/orgs/" ++ orgName ++ "/members"

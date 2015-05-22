@@ -42,4 +42,4 @@ printGitHubUsers orgName oAuthToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        print $ map GitHub.getOrgMember users
+        mapM_ (print . GitHub.getOrgMember) users
