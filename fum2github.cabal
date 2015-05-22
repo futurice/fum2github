@@ -21,6 +21,7 @@ library
                        regex-compat,
                        text,
                        transformers,
+                       transformers-compat,
                        unordered-containers,
                        vector
   default-language:    Haskell2010

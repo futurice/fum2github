@@ -1,20 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Fum2GitHub.Fum (
     getAllUsers,
-    User(User), username, github,
-    userFromAPI,
+    User(..),
+    UsersResult(..)
 ) where
 
 import           Control.Applicative ((<*>), (<$>))
-import           Data.Aeson ((.:))
-import qualified Data.Aeson as Aeson
-import           Data.Aeson.Types (parseEither)
+import           Data.Aeson
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.HashMap.Strict as HMS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
-import           Data.Traversable (traverse)
-import qualified Data.Vector as Vector
 import           Network.HTTP.Conduit (
     httpLbs,
     parseUrl,
@@ -22,6 +17,7 @@ import           Network.HTTP.Conduit (
     responseBody,
     withManager)
 
+import Control.Monad.Trans.Except
 
 -- Get the response body from url using authToken.
 getHttp :: String -> String -> IO LBS.ByteString
@@ -35,55 +31,44 @@ getHttp url authToken = do
         return $ responseBody resp
     return body
 
+data User = User
+  { userName :: String
+  , userGithub :: Maybe String
+  , userEmail :: Maybe String -- can be empty?
+  }
+  deriving (Eq, Show)
 
--- Get all JSON results from url using authToken, following all pages to end.
-getAPIAll :: String -> String -> IO (Either String [Aeson.Value])
-getAPIAll url authToken = do
-    lbsBody <- getHttp url authToken
-    case Aeson.eitherDecode lbsBody :: Either String Aeson.Object of
-      Left msg -> return (Left msg)
-      Right map -> do
-        let resultsE = case HMS.lookup (T.pack "results") map of
-                         Nothing -> Left "“results” missing in FUM response"
-                         Just v -> case v of
-                                     Aeson.Array a -> Right (Vector.toList a)
-                                     _ -> Left "FUM “results” is not an array"
-        case resultsE of
-          Left msg -> return resultsE
-          Right results -> do
-            let nextE = case HMS.lookup (T.pack "next") map of
-                      Nothing -> Left "“next” missing in FUM response"
-                      Just v -> case v of
-                                  Aeson.String txt -> Right (T.unpack txt)
-                                  Aeson.Null -> Right ""
-                                  _ -> Left "FUM “next” is not a string"
-            case nextE of
-              Left msg -> return (Left msg)
-              Right next -> do
-                tailE <- if null next then
-                    return (Right [])
-                else
-                    getAPIAll next authToken
-                case tailE of
-                  Left msg -> return (Left msg)
-                  Right tail -> return (Right (results ++ tail))
+instance FromJSON User where
+  parseJSON = withObject "User object" p
+   where p v = User <$> v .: "username"
+                    <*> (emptyToNothing <$> v .: "github")
+                    <*> v .: "email"
 
+emptyToNothing :: [a] -> Maybe [a]
+emptyToNothing [] = Nothing
+emptyToNothing x  = Just x
 
-data User = User { username :: String, github :: String } deriving (Show, Eq)
+data UsersResult = UsersResult
+  { urUsers :: [User]
+  , urNext :: Maybe String
+  }
+  deriving (Eq, Show)
 
-instance Aeson.FromJSON User where
-  parseJSON = Aeson.withObject "User object" p
-    where p v = User <$> v .: "username"
-                     <*> v .: "github"
+instance FromJSON UsersResult where
+  parseJSON x = withObject "FUM users result object" p x
+    where p v = UsersResult <$> v .: "results"
+                            <*> v .: "next"
 
-userFromAPI :: Aeson.Value -> Either String User
-userFromAPI = parseEither Aeson.parseJSON
+getSingle :: String -> String -> ExceptT String IO UsersResult
+getSingle authToken url = ExceptT $ eitherDecode <$> getHttp url authToken
 
+getAll :: String -> String -> ExceptT String IO [User]
+getAll authToken url = do
+  UsersResult users next <- getSingle authToken url
+  case next of
+    Nothing    -> return users
+    Just next' -> (users ++) <$> getAll authToken next'
 
 -- Get all users from the FUM API.
 getAllUsers :: String -> String -> IO (Either String [User])
-getAllUsers usersUrl authToken = do
-    resultsE <- getAPIAll usersUrl authToken
-    return $ case resultsE of
-      Left msg -> Left msg
-      Right results -> traverse userFromAPI results
+getAllUsers usersUrl authToken = runExceptT $ getAll authToken usersUrl

@@ -5,3 +5,5 @@
 /dist/
 
 /.vagrant/
+
+run.sh

@@ -1,11 +1,11 @@
 module Main (main) where
 
+import           Data.Maybe
 import qualified Fum2GitHub.Fum as Fum
 import qualified Fum2GitHub.GitHub as GitHub
-import           System.Environment (getArgs)
+import           Options.Applicative
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
-import           Options.Applicative
 
 -- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
 data Opts = Opts String String String GitHub.OAuthToken
@@ -31,7 +31,8 @@ printFumUsers fumApiUsersUrl authToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        print . filter (not . null . Fum.github) $ users
+        let users' = filter (not . isJust . Fum.userGithub) $ users
+        mapM_ print users'
 
 printGitHubUsers :: String -> GitHub.OAuthToken -> IO ()
 printGitHubUsers orgName oAuthToken = do
