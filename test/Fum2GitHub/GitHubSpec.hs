@@ -4,6 +4,7 @@ module Fum2GitHub.GitHubSpec (
 ) where
 
 import qualified Fum2GitHub.GitHub as GitHub
+import           Fum2GitHub.Util (URL(URL))
 import           Test.Hspec (describe, it, shouldBe, Spec)
 
 spec :: Spec
@@ -19,4 +20,4 @@ spec = do
            ("Link", "<urlE>; rel=\"first\", <urlF>; rel=\"next\", <urlG>; rel=\"prev\", <urlH>; rel=\"next\""),
            ("Link", "<urlI>; rel=\"next\"")
            ]
-      GitHub.getNextUrl hdrs `shouldBe` Just (GitHub.URL "urlF")
+      GitHub.getNextUrl hdrs `shouldBe` Just (URL "urlF")

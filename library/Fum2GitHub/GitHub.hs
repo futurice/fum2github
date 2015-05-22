@@ -4,7 +4,6 @@ module Fum2GitHub.GitHub (
     getOrgMembers,
     OAuthToken(OAuthToken),
     OrgMember(getOrgMember),
-    URL(URL),
 ) where
 
 import           Control.Applicative ((<$>))
@@ -16,36 +15,33 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import           Data.Traversable (traverse)
 import qualified Data.Vector as Vector
+import           Fum2GitHub.Util (
+    getAPIAll,
+    URL(URL, getURL))
 import           Network.HTTP.Conduit (
     applyBasicAuth,
-    httpLbs,
     parseUrl,
+    Request,
     requestHeaders,
+    Response,
     responseBody,
-    responseHeaders,
-    withManager)
+    responseHeaders)
 import           Network.HTTP.Types.Header (ResponseHeaders)
 import           Text.Regex (mkRegex, matchRegex)
 
 
-newtype URL = URL { getURL :: String } deriving (Eq, Show)
-
 newtype OAuthToken = OAuthToken { getOAuthToken :: String }
 
 
--- Get the response body and headers from url using oAuthToken.
-getHttp :: URL -> OAuthToken -> IO (LBS.ByteString, ResponseHeaders)
-getHttp url oAuthToken = do
-    putStrLn $ getURL url -- debug logging
+-- TODO: return the error message e.g. "Invalid URL" instead of just Nothing.
+prepareRequest :: URL -> OAuthToken -> Maybe Request
+prepareRequest url token = do
     baseReq <- parseUrl $ getURL url
     let agHdr = ("User-Agent", "https://github.com/futurice/fum2github")
         authReq = applyBasicAuth
-                    (E.encodeUtf8 . T.pack . getOAuthToken $ oAuthToken)
+                    (E.encodeUtf8 . T.pack . getOAuthToken $ token)
                     "x-oauth-basic" baseReq
-        req = authReq { requestHeaders = agHdr : requestHeaders authReq }
-    withManager $ \manager -> do
-        resp <- httpLbs req manager
-        return (responseBody resp, responseHeaders resp)
+    return authReq { requestHeaders = agHdr : requestHeaders authReq }
 
 
 {-
@@ -69,22 +65,18 @@ getNextUrl headers =
       foldFunc (Just [x]) _ = Just (URL x)
       foldFunc _ x = x
 
+-- Prepare the Request for the next API page of results.
+getApiNext :: OAuthToken -> Response LBS.ByteString -> Maybe Request
+getApiNext token response = do
+    nextUrl <- getNextUrl (responseHeaders response)
+    prepareRequest nextUrl token
 
--- Get all JSON results from url using oAuthToken, following all pages to end.
-getAll :: URL -> OAuthToken -> IO (Either String [Aeson.Value])
-getAll url oAuthToken = do
-    (body, hdrs) <- getHttp url oAuthToken
-    case Aeson.eitherDecode body :: Either String Aeson.Array of
-      Left msg -> return $ Left msg
-      Right arrJ -> do
-        let arr = Vector.toList arrJ
-        case getNextUrl hdrs of
-          Nothing -> return $ Right arr
-          Just nextUrl -> do
-            tailE <- getAll nextUrl oAuthToken
-            case tailE of
-              Left msg -> return $ Left msg
-              Right tail -> return $ Right (arr ++ tail)
+
+getAPIResults :: Response LBS.ByteString -> Either String [Aeson.Value]
+getAPIResults resp =
+    case Aeson.eitherDecode (responseBody resp) :: Either String Aeson.Array of
+      Left msg -> Left msg
+      Right arrJ -> Right $ Vector.toList arrJ
 
 
 newtype OrgMember = OrgMember { getOrgMember :: String }
@@ -96,10 +88,13 @@ instance Aeson.FromJSON OrgMember where
 
 -- Get all members of the organisation.
 getOrgMembers :: String -> OAuthToken -> IO (Either String [OrgMember])
-getOrgMembers orgName oAuthToken = do
+getOrgMembers orgName token = do
     let url = URL $ "https://api.github.com/orgs/" ++ orgName ++ "/members"
-    resultsE <- getAll url oAuthToken
-    case resultsE of
-      Left msg -> return $ Left msg
-      Right results -> do
-        return $ traverse (parseEither Aeson.parseJSON) results
+    case prepareRequest url token of
+      Nothing -> return $ Left "error preparing GitHub Org HTTP request"
+      Just req -> do
+        resultsE <- getAPIAll req (getApiNext token) getAPIResults
+        case resultsE of
+          Left msg -> return $ Left msg
+          Right results ->
+            return $ traverse (parseEither Aeson.parseJSON) results
