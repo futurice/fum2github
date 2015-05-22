@@ -5,31 +5,24 @@ module Fum2GitHub.Fum (
     UsersResult(..)
 ) where
 
-import           Control.Applicative ((<*>), (<$>))
+import           Control.Applicative
+import           Control.Monad.Trans.Except
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
-import           Network.HTTP.Conduit (
-    httpLbs,
-    parseUrl,
-    requestHeaders,
-    responseBody,
-    withManager)
-
-import Control.Monad.Trans.Except
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS
 
 -- Get the response body from url using authToken.
 getHttp :: String -> String -> IO LBS.ByteString
 getHttp url authToken = do
-    putStrLn url -- debug logging
+    putStrLn $ "FUM GET: " ++ url -- debug logging
     baseReq <- parseUrl url
-    let authHdr = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
-        req = baseReq { requestHeaders = authHdr : requestHeaders baseReq }
-    body <- withManager $ \manager -> do
-        resp <- httpLbs req manager
-        return $ responseBody resp
-    return body
+    let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
+        req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }
+    withManager tlsManagerSettings $ \manager -> do
+      responseBody <$> httpLbs req manager
 
 data User = User
   { userName :: String

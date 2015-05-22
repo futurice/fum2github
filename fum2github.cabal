@@ -16,6 +16,8 @@ library
                        base,
                        bytestring,
                        case-insensitive,
+                       http-client,
+                       http-client-tls,
                        http-conduit,
                        http-types,
                        regex-compat,
