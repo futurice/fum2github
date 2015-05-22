@@ -9,9 +9,12 @@ import           Test.Hspec (describe, it, shouldBe, Spec)
 
 spec :: Spec
 spec = do
-  describe "userFromAPI" $ do
+  describe "FromJSON" $ do
     it "reads .username and .github from the FUM API's JSON response" $ do
-      let dump = "{\"username\": \"jsmi\", \"github\": \"john\"}"
-      case Aeson.decode dump :: Maybe Aeson.Value
-        of Just v -> Fum.userFromAPI v `shouldBe` Right Fum.User{
-                       Fum.username="jsmi", Fum.github="john"}
+      let dump = "{\"username\": \"jsmi\", \"github\": \"john\", \"email\": null}"
+      case Aeson.eitherDecode dump of
+        Right v -> v `shouldBe` Fum.User { Fum.userName   ="jsmi"
+                                         , Fum.userGithub = Just "john"
+                                         , Fum.userEmail  = Nothing
+                                         }
+        Left err -> fail err
