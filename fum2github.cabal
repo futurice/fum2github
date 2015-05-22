@@ -28,7 +28,7 @@ library
 executable fum2github
   hs-source-dirs:      executable
   main-is:             Main.hs
-  build-depends:       base, fum2github
+  build-depends:       base, fum2github, optparse-applicative
   default-language:    Haskell2010
 
 Test-Suite hspec

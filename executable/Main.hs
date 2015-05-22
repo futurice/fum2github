@@ -1,20 +1,27 @@
+module Main (main) where
+
 import qualified Fum2GitHub.Fum as Fum
 import qualified Fum2GitHub.GitHub as GitHub
 import           System.Environment (getArgs)
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
+import           Options.Applicative
+
+-- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
+data Opts = Opts String String String GitHub.OAuthToken
+
+opts :: Parser Opts
+opts = Opts <$> argument str (metavar "fum-api-users-url")
+            <*> argument str (metavar "fum-auth-token")
+            <*> argument str (metavar "github-organisation")
+            <*> (GitHub.OAuthToken <$> argument str (metavar "guthub-oauth-token"))
 
 main :: IO ()
-main = do
-  args <- getArgs
-  case args of
-    [fumApiUsersUrl, fumAuthToken, gitHubOrg, gitHubOAuthToken] -> do
-      printFumUsers fumApiUsersUrl fumAuthToken
-      printGitHubUsers gitHubOrg (GitHub.OAuthToken gitHubOAuthToken)
-    _ -> do
-      hPutStrLn stderr "Usage: fum-api-users-url fumAuthToken gitHubOrg gitHubOAuthToken"
-      exitWith $ ExitFailure 1
-
+main = execParser opts' >>= main'
+  where opts' = info (helper <*> opts) (fullDesc <> header "Print fum and github users")
+        main' (Opts fumApiUsersUrl fumAuthToken githubOrg githubOAuthToken) = do
+          printFumUsers fumApiUsersUrl fumAuthToken
+          printGitHubUsers githubOrg githubOAuthToken
 
 printFumUsers :: String -> String -> IO ()
 printFumUsers fumApiUsersUrl authToken = do
