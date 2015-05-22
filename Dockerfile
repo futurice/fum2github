@@ -3,7 +3,9 @@ FROM phadej/ghc
 COPY . /tmp/f2g-repo
 
 WORKDIR /tmp/f2g-repo
-RUN cabal update \
+RUN rm -f cabal.config \
+  && wget https://www.stackage.org/lts/cabal.config
+  && cabal update \
   && cabal sandbox init \
   && cabal install --only-dependencies --enable-tests \
   && cabal configure --enable-tests \

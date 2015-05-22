@@ -14,7 +14,7 @@ opts :: Parser Opts
 opts = Opts <$> argument str (metavar "fum-api-users-url")
             <*> argument str (metavar "fum-auth-token")
             <*> argument str (metavar "github-organisation")
-            <*> (GitHub.OAuthToken <$> argument str (metavar "guthub-oauth-token"))
+            <*> (GitHub.OAuthToken <$> argument str (metavar "github-oauth-token"))
 
 main :: IO ()
 main = execParser opts' >>= main'
@@ -31,7 +31,7 @@ printFumUsers fumApiUsersUrl authToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        let users' = filter (not . isJust . Fum.userGithub) $ users
+        let users' = filter (isJust . Fum.userGithub) users
         mapM_ print users'
 
 printGitHubUsers :: String -> GitHub.OAuthToken -> IO ()
@@ -42,4 +42,4 @@ printGitHubUsers orgName oAuthToken = do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        mapM_ (print . GitHub.getOrgMember) users
+        mapM_ (putStrLn . GitHub.getOrgMember) users
