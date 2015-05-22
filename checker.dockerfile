@@ -1,10 +1,10 @@
-FROM phadej/ghc
+# Keep this in sync with the Stackage LTS which provides cabal.config below.
+FROM phadej/ghc:7.8
 
 COPY . /tmp/f2g-repo
-
 WORKDIR /tmp/f2g-repo
 RUN rm -f cabal.config \
-  && wget https://www.stackage.org/lts/cabal.config
+  && curl --silent -O https://www.stackage.org/lts/cabal.config \
   && cabal update \
   && cabal sandbox init \
   && cabal install --only-dependencies --enable-tests \

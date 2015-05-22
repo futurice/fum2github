@@ -38,6 +38,9 @@ and deploys the `master` branch.
 You can select a different `DEPLOY_BRANCH` in `ansible/playbook.yml`
 or by passing `-e DEPLOY_BRANCH=mybranch` to the `ansible-playbook` command.
 
+Checkout the same `DEPLOY_BRANCH` locally when deploying, because it will use
+some of the local files in `ansible/`.
+
 Install Ansible (e.g. in a Python virtual enviroment using `pip install`).
 
 The machine we are deploying to only needs Docker installed

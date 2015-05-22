@@ -1,10 +1,17 @@
 ---
 
-# system setup: create user account and install packages
 - hosts: all
   become: yes
   become_user: root
+  vars_files:
+    - secrets.yml
+  vars:
+    DEPLOY_BRANCH: "master"
+    DATA_DIR: "/home/fum2github/data"
+
   tasks:
+
+    # system setup: create user account and install packages
     - name: create fum2github user
       user: name=fum2github
     - name: update apt cache
@@ -16,13 +23,11 @@
         - git
         - htop
     - name: enable proxy_http Apache module
-      shell: "a2enmod proxy_http"
+      apache2_module: name=proxy_http state=present
+      notify:
+        - restart apache
 
-# remove cron entries, stop and remove containers
-- hosts: all
-  become: yes
-  become_user: root
-  tasks:
+    # remove cron entries, stop and remove containers
     - name: "remove crontab entry: fum2github/checker"
       cron: name="fum2github/checker" state="absent"
     - name: "stop then delete containers: checker, web"
@@ -31,16 +36,8 @@
       shell: "docker stop fum2github_checker fum2github_web || true &&
               docker rm -f fum2github_checker fum2github_web || true"
 
-# deploy {{DEPLOY_BRANCH}} from the repository on GitHub
-- hosts: all
-  become: yes
-  become_user: root
-  vars_files:
-    - secrets.yml
-  vars:
-    DEPLOY_BRANCH: "master"
-    DATA_DIR: "/home/fum2github/data"
-  tasks:
+    # deploy {{DEPLOY_BRANCH}} from the repository on GitHub
+
     - name: save deploy timestamp (YYYY-MM-DDTHH:MM:SSZ → YYYYMMDDTHHMMSSZ)
       register: tstamp
       shell: "echo {{ansible_date_time.iso8601}} | sed -e 's/[:-]//g'"
@@ -64,14 +61,13 @@
         # ‘git checkout test’ just checks out the ‘test’ directory on master.
         version: "{{DEPLOY_BRANCH}} --"
 
-    - name: copy Apache config file
-      shell: "cp {{repo.stdout}}/ansible/010-fum2github.conf
-              /etc/apache2/sites-available"
+    - name: copy Apache config file to sites-available
+      copy: src=010-fum2github.conf dest=/etc/apache2/sites-available/
+      notify: restart apache
     - name: symlink to Apache config in sites-available/ from sites-enabled/
       file: path=/etc/apache2/sites-enabled/010-fum2github.conf state=link
             src=../sites-available/010-fum2github.conf
-    - name: restart Apache
-      service: name=apache2 state=restarted
+      notify: restart apache
 
     - name: "remove docker ‘:next’ images: checker, web"
       # ‘rmi’ returns a non-zero exit code if some images don't exist
@@ -111,3 +107,7 @@
               -v {{DATA_DIR}}:/usr/local/apache2/htdocs
               -p 127.0.0.1:3001:80
               fum2github/web"
+
+  handlers:
+    - name: restart apache
+      service: name=apache2 state=restarted
