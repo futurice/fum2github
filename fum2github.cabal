@@ -11,7 +11,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      library
-  exposed-modules:     Fum2GitHub.Fum, Fum2GitHub.GitHub
+  exposed-modules:     Fum2GitHub.Fum,
+                       Fum2GitHub.GitHub,
+                       Fum2GitHub.Util
   build-depends:       aeson,
                        base,
                        bytestring,

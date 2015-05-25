@@ -11,15 +11,17 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
+import           Fum2GitHub.Util(
+    URL(URL, getURL))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           System.IO (hPutStrLn, stderr)
 
 -- Get the response body from url using authToken.
-getHttp :: String -> String -> IO LBS.ByteString
+getHttp :: URL -> String -> IO LBS.ByteString
 getHttp url authToken = do
-    hPutStrLn stderr $ "FUM GET: " ++ url -- debug logging
-    baseReq <- parseUrl url
+    hPutStrLn stderr $ "FUM GET: " ++ getURL url -- debug logging
+    baseReq <- parseUrl $ getURL url
     let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
         req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }
     withManager tlsManagerSettings $ \manager -> do
@@ -44,7 +46,7 @@ emptyToNothing x  = Just x
 
 data UsersResult = UsersResult
   { urUsers :: [User]
-  , urNext :: Maybe String
+  , urNext :: Maybe URL
   }
   deriving (Eq, Show)
 
@@ -53,10 +55,10 @@ instance FromJSON UsersResult where
     where p v = UsersResult <$> v .: "results"
                             <*> v .: "next"
 
-getSingle :: String -> String -> ExceptT String IO UsersResult
+getSingle :: String -> URL -> ExceptT String IO UsersResult
 getSingle authToken url = ExceptT $ eitherDecode <$> getHttp url authToken
 
-getAll :: String -> String -> ExceptT String IO [User]
+getAll :: String -> URL -> ExceptT String IO [User]
 getAll authToken url = do
   UsersResult users next <- getSingle authToken url
   case next of
@@ -64,5 +66,5 @@ getAll authToken url = do
     Just next' -> (users ++) <$> getAll authToken next'
 
 -- Get all users from the FUM API.
-getAllUsers :: String -> String -> IO (Either String [User])
+getAllUsers :: URL -> String -> IO (Either String [User])
 getAllUsers usersUrl authToken = runExceptT $ getAll authToken usersUrl

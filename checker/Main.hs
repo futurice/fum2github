@@ -3,15 +3,16 @@ module Main (main) where
 import           Data.Maybe
 import qualified Fum2GitHub.Fum as Fum
 import qualified Fum2GitHub.GitHub as GitHub
+import           Fum2GitHub.Util(URL(URL))
 import           Options.Applicative
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
 
 -- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
-data Opts = Opts String String String GitHub.OAuthToken
+data Opts = Opts URL String String GitHub.OAuthToken
 
 opts :: Parser Opts
-opts = Opts <$> argument str (metavar "fum-api-users-url")
+opts = Opts <$> (URL <$> argument str (metavar "fum-api-users-url"))
             <*> argument str (metavar "fum-auth-token")
             <*> argument str (metavar "github-organisation")
             <*> (GitHub.OAuthToken <$> argument str (metavar "github-oauth-token"))
@@ -23,7 +24,7 @@ main = execParser opts' >>= main'
           printFumUsers fumApiUsersUrl fumAuthToken
           printGitHubUsers githubOrg githubOAuthToken
 
-printFumUsers :: String -> String -> IO ()
+printFumUsers :: URL -> String -> IO ()
 printFumUsers fumApiUsersUrl authToken = do
     usersE <- Fum.getAllUsers fumApiUsersUrl authToken
     case usersE of

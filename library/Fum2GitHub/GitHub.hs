@@ -5,7 +5,6 @@ module Fum2GitHub.GitHub (
     getOrgMembers,
     OAuthToken(OAuthToken),
     OrgMember(getOrgMember),
-    URL(URL),
 ) where
 
 import           Control.Applicative
@@ -14,13 +13,13 @@ import           Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
+import           Fum2GitHub.Util(
+    URL(URL, getURL))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header (ResponseHeaders)
 import           System.IO (hPutStrLn, stderr)
 import           Text.Regex (mkRegex, matchRegex)
-
-newtype URL = URL { getURL :: String } deriving (Eq, Show)
 
 newtype OAuthToken = OAuthToken { getOAuthToken :: String } deriving (Eq, Show)
 
