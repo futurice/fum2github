@@ -17,6 +17,7 @@ import qualified Data.Text.Encoding as E
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header (ResponseHeaders)
+import           System.IO (hPutStrLn, stderr)
 import           Text.Regex (mkRegex, matchRegex)
 
 newtype URL = URL { getURL :: String } deriving (Eq, Show)
@@ -26,7 +27,7 @@ newtype OAuthToken = OAuthToken { getOAuthToken :: String } deriving (Eq, Show)
 -- Get the response body and headers from url using oAuthToken.
 getHttp :: URL -> OAuthToken -> IO (LBS.ByteString, ResponseHeaders)
 getHttp url oAuthToken = do
-    putStrLn $ "GitHub GET: " ++ getURL url -- debug logging
+    hPutStrLn stderr $ "GitHub GET: " ++ getURL url -- debug logging
     baseReq <- parseUrl $ getURL url
     let userAgentHeader = ("User-Agent", "https://github.com/futurice/fum2github")
         authReq = applyBasicAuth

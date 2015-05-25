@@ -13,11 +13,12 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
+import           System.IO (hPutStrLn, stderr)
 
 -- Get the response body from url using authToken.
 getHttp :: String -> String -> IO LBS.ByteString
 getHttp url authToken = do
-    putStrLn $ "FUM GET: " ++ url -- debug logging
+    hPutStrLn stderr $ "FUM GET: " ++ url -- debug logging
     baseReq <- parseUrl url
     let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
         req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }

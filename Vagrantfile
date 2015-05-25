@@ -2,6 +2,8 @@ Vagrant.configure(2) do |config|
   config.vm.box = "ubuntu/trusty64"
 
   config.vm.network "forwarded_port", guest: 80, host:3000
+  # override the default ‘2222’ "ssh" port forwarding, if other VMs are up
+  config.vm.network "forwarded_port", id: "ssh", guest: 22, host:2233
   config.ssh.forward_x11 = true
 
   config.vm.provider "virtualbox" do |vb|

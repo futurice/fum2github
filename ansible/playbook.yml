@@ -101,7 +101,10 @@
       cron: name="fum2github/checker" minute="0" hour="*/4"
             job="docker run --name=fum2github_checker --rm fum2github/checker
                  https://api.fum.futurice.com/users/ {{FUM_TOKEN}}
-                 futurice {{GITHUB_TOKEN}} >{{DATA_DIR}}/report 2>&1"
+                 futurice {{GITHUB_TOKEN}}
+                 >{{DATA_DIR}}/report.next 2>{{DATA_DIR}}/stderr.txt
+                 &&
+                 mv {{DATA_DIR}}/report.next {{DATA_DIR}}/report.txt"
     - name: "start container: web"
       shell: "docker run --name=fum2github_web -d --restart=always
               -v {{DATA_DIR}}:/usr/local/apache2/htdocs
