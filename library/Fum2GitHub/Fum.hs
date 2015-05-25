@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Fum2GitHub.Fum (
+    AuthToken(AuthToken),
     getAllUsers,
     User(..),
     UsersResult(..)
@@ -17,12 +18,14 @@ import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           System.IO (hPutStrLn, stderr)
 
+newtype AuthToken = AuthToken { getAuthToken :: String }
+
 -- Get the response body from url using authToken.
-getHttp :: URL -> String -> IO LBS.ByteString
-getHttp url authToken = do
+getHttp :: URL -> AuthToken -> IO LBS.ByteString
+getHttp url token = do
     hPutStrLn stderr $ "FUM GET: " ++ getURL url -- debug logging
     baseReq <- parseUrl $ getURL url
-    let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ authToken)
+    let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ getAuthToken token)
         req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }
     withManager tlsManagerSettings $ \manager -> do
       responseBody <$> httpLbs req manager
@@ -55,16 +58,16 @@ instance FromJSON UsersResult where
     where p v = UsersResult <$> v .: "results"
                             <*> v .: "next"
 
-getSingle :: String -> URL -> ExceptT String IO UsersResult
-getSingle authToken url = ExceptT $ eitherDecode <$> getHttp url authToken
+getSingle :: AuthToken -> URL -> ExceptT String IO UsersResult
+getSingle token url = ExceptT $ eitherDecode <$> getHttp url token
 
-getAll :: String -> URL -> ExceptT String IO [User]
-getAll authToken url = do
-  UsersResult users next <- getSingle authToken url
+getAll :: AuthToken -> URL -> ExceptT String IO [User]
+getAll token url = do
+  UsersResult users next <- getSingle token url
   case next of
     Nothing    -> return users
-    Just next' -> (users ++) <$> getAll authToken next'
+    Just next' -> (users ++) <$> getAll token next'
 
 -- Get all users from the FUM API.
-getAllUsers :: URL -> String -> IO (Either String [User])
-getAllUsers usersUrl authToken = runExceptT $ getAll authToken usersUrl
+getAllUsers :: URL -> AuthToken -> IO (Either String [User])
+getAllUsers usersUrl token = runExceptT $ getAll token usersUrl

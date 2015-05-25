@@ -9,11 +9,11 @@ import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
 
 -- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
-data Opts = Opts URL String String GitHub.OAuthToken
+data Opts = Opts URL Fum.AuthToken String GitHub.OAuthToken
 
 opts :: Parser Opts
 opts = Opts <$> (URL <$> argument str (metavar "fum-api-users-url"))
-            <*> argument str (metavar "fum-auth-token")
+            <*> (Fum.AuthToken <$> argument str (metavar "fum-auth-token"))
             <*> argument str (metavar "github-organisation")
             <*> (GitHub.OAuthToken <$> argument str (metavar "github-oauth-token"))
 
@@ -24,7 +24,7 @@ main = execParser opts' >>= main'
           printFumUsers fumApiUsersUrl fumAuthToken
           printGitHubUsers githubOrg githubOAuthToken
 
-printFumUsers :: URL -> String -> IO ()
+printFumUsers :: URL -> Fum.AuthToken -> IO ()
 printFumUsers fumApiUsersUrl authToken = do
     usersE <- Fum.getAllUsers fumApiUsersUrl authToken
     case usersE of
