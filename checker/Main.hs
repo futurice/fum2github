@@ -3,7 +3,7 @@ module Main (main) where
 import           Data.Maybe
 import qualified Fum2GitHub.Fum as Fum
 import qualified Fum2GitHub.GitHub as GitHub
-import           Fum2GitHub.Util(URL(URL))
+import           Fum2GitHub.Types(URL(URL))
 import           Options.Applicative
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)

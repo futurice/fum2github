@@ -4,7 +4,7 @@ module Fum2GitHub.GitHubSpec (
 ) where
 
 import qualified Fum2GitHub.GitHub as GitHub
-import           Fum2GitHub.Util (URL(URL))
+import           Fum2GitHub.Types (URL(URL))
 import           Test.Hspec (describe, it, shouldBe, Spec)
 
 spec :: Spec

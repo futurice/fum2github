@@ -13,7 +13,7 @@ library
   hs-source-dirs:      library
   exposed-modules:     Fum2GitHub.Fum,
                        Fum2GitHub.GitHub,
-                       Fum2GitHub.Util
+                       Fum2GitHub.Types
   build-depends:       aeson,
                        base,
                        bytestring,

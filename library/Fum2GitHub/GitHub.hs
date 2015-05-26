@@ -13,7 +13,7 @@ import           Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
-import           Fum2GitHub.Util(
+import           Fum2GitHub.Types(
     URL(URL, getURL))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS

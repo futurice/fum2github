@@ -1,5 +1,5 @@
-module Fum2GitHub.Util (
-    URL(URL, getURL),
+module Fum2GitHub.Types (
+    URL(..),
 ) where
 
 import           Control.Applicative
@@ -10,4 +10,4 @@ import qualified Data.Text as T
 newtype URL = URL { getURL :: String } deriving (Eq, Show)
 
 instance Aeson.FromJSON URL where
-  parseJSON = Aeson.withText "String" $ pure . URL . T.unpack
+  parseJSON v = URL <$> Aeson.parseJSON v
