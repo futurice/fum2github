@@ -7,6 +7,7 @@ import           Fum2GitHub.Types(URL(URL))
 import           Options.Applicative
 import           System.Exit (exitWith, ExitCode(ExitFailure))
 import           System.IO (hPutStrLn, stderr)
+import           System.Log.Logger
 
 -- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
 data Opts = Opts URL Fum.AuthToken String GitHub.OAuthToken
@@ -21,6 +22,7 @@ main :: IO ()
 main = execParser opts' >>= main'
   where opts' = info (helper <*> opts) (fullDesc <> header "Print fum and github users")
         main' (Opts fumApiUsersUrl fumAuthToken githubOrg githubOAuthToken) = do
+          updateGlobalLogger rootLoggerName (setLevel DEBUG)
           printFumUsers fumApiUsersUrl fumAuthToken
           printGitHubUsers githubOrg githubOAuthToken
 

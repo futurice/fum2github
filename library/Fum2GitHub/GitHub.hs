@@ -18,15 +18,18 @@ import           Fum2GitHub.Types(
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Header (ResponseHeaders)
-import           System.IO (hPutStrLn, stderr)
+import           System.Log.Logger
 import           Text.Regex (mkRegex, matchRegex)
+
+loggerName :: String
+loggerName = "Fum2GitHub.GitHub"
 
 newtype OAuthToken = OAuthToken { getOAuthToken :: String } deriving (Eq, Show)
 
 -- Get the response body and headers from url using oAuthToken.
 getHttp :: URL -> OAuthToken -> IO (LBS.ByteString, ResponseHeaders)
 getHttp url oAuthToken = do
-    hPutStrLn stderr $ "GitHub GET: " ++ getURL url -- debug logging
+    infoM loggerName $ "GitHub GET: " ++ getURL url
     baseReq <- parseUrl $ getURL url
     let userAgentHeader = ("User-Agent", "https://github.com/futurice/fum2github")
         authReq = applyBasicAuth

@@ -16,14 +16,17 @@ import           Fum2GitHub.Types(
     URL(URL, getURL))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-import           System.IO (hPutStrLn, stderr)
+import           System.Log.Logger
+
+loggerName :: String
+loggerName = "Fum2GitHub.Fum"
 
 newtype AuthToken = AuthToken { getAuthToken :: String }
 
 -- Get the response body from url using authToken.
 getHttp :: URL -> AuthToken -> IO LBS.ByteString
 getHttp url token = do
-    hPutStrLn stderr $ "FUM GET: " ++ getURL url -- debug logging
+    infoM loggerName $ "FUM GET: " ++ getURL url
     baseReq <- parseUrl $ getURL url
     let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ getAuthToken token)
         req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }
