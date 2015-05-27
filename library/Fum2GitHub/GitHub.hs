@@ -4,7 +4,7 @@ module Fum2GitHub.GitHub (
     getNextUrl,
     getOrgMembers,
     OAuthToken(OAuthToken),
-    OrgMember(getOrgMember),
+    OrgMember(OrgMember, getOrgMember),
 ) where
 
 import           Control.Applicative
@@ -74,7 +74,7 @@ getAll url authToken = do
     Nothing       -> return members
     Just nextUrl' -> (members ++) <$> getAll nextUrl' authToken
 
-newtype OrgMember = OrgMember { getOrgMember :: String }
+newtype OrgMember = OrgMember { getOrgMember :: String } deriving (Eq, Show)
 
 instance Aeson.FromJSON OrgMember where
   parseJSON = Aeson.withObject "Org Member object" p

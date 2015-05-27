@@ -1,6 +1,7 @@
 module Main (main) where
 
 import           Data.Maybe
+import qualified Fum2GitHub.Compare as Compare
 import qualified Fum2GitHub.Fum as Fum
 import qualified Fum2GitHub.GitHub as GitHub
 import           Fum2GitHub.Types(URL(URL))
@@ -21,28 +22,22 @@ opts = Opts <$> (URL <$> argument str (metavar "fum-api-users-url"))
 main :: IO ()
 main = execParser opts' >>= main'
   where opts' = info (helper <*> opts) (fullDesc <> header "Print fum and github users")
-        main' (Opts fumApiUsersUrl fumAuthToken githubOrg githubOAuthToken) = do
-          updateGlobalLogger rootLoggerName (setLevel DEBUG)
-          printFumUsers fumApiUsersUrl fumAuthToken
-          printGitHubUsers githubOrg githubOAuthToken
 
-printFumUsers :: URL -> Fum.AuthToken -> IO ()
-printFumUsers fumApiUsersUrl authToken = do
-    usersE <- Fum.getAllUsers fumApiUsersUrl authToken
-    case usersE of
+main' :: Opts -> IO ()
+main' (Opts fumApiUsersUrl fumAuthToken githubOrg githubOAuthToken) = do
+    updateGlobalLogger rootLoggerName (setLevel DEBUG)
+    fumE <- Fum.getAllUsers fumApiUsersUrl fumAuthToken
+    githubE <- GitHub.getOrgMembers githubOrg githubOAuthToken
+    let diffE :: Either String [GitHub.OrgMember]
+        diffE = do
+          fum <- fumE
+          github <- githubE
+          return $ Compare.gitHubUsersNotInFum github fum
+    case diffE of
       Left msg -> do
         hPutStrLn stderr msg
         exitWith $ ExitFailure 1
       Right users -> do
-        let users' = filter (isJust . Fum.userGithub) users
-        mapM_ print users'
-
-printGitHubUsers :: String -> GitHub.OAuthToken -> IO ()
-printGitHubUsers orgName oAuthToken = do
-    usersE <- GitHub.getOrgMembers orgName oAuthToken
-    case usersE of
-      Left msg -> do
-        hPutStrLn stderr msg
-        exitWith $ ExitFailure 1
-      Right users -> do
+        putStrLn $ (show . length $ users) ++ " members of the " ++
+          githubOrg ++ " GitHub organization are not in FUM:"
         mapM_ (putStrLn . GitHub.getOrgMember) users
