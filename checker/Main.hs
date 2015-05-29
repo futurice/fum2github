@@ -1,5 +1,6 @@
 module Main (main) where
 
+import           Data.List
 import           Data.Maybe
 import qualified Fum2GitHub.Compare as Compare
 import qualified Fum2GitHub.Fum as Fum
@@ -40,4 +41,4 @@ main' (Opts fumApiUsersUrl fumAuthToken githubOrg githubOAuthToken) = do
       Right users -> do
         putStrLn $ (show . length $ users) ++ " members of the " ++
           githubOrg ++ " GitHub organization are not in FUM:"
-        mapM_ (putStrLn . GitHub.getOrgMember) users
+        putStrLn $ intercalate ", " (map GitHub.getOrgMember users)
