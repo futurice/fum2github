@@ -35,8 +35,8 @@ dist/build/checker/checker https://api.fum.futurice.com/users/ «fum-token» fut
 
 This clones the repository from GitHub (it does not use your local repository)
 and deploys the `master` branch.
-You can select a different `DEPLOY_BRANCH` in `ansible/playbook.yml`
-or by passing `-e DEPLOY_BRANCH=mybranch` to the `ansible-playbook` command.
+You can select a different one by passing `-e DEPLOY_BRANCH=mybranch`
+to the `ansible-playbook` command.
 
 Checkout the same `DEPLOY_BRANCH` locally when deploying, because it will use
 some of the local files in `ansible/`.
