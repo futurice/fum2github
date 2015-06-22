@@ -1,31 +1,33 @@
+----------------------------------------------------------------------------
+-- |
+-- Module      :  Fum2GitHub.Compare
+-- Copyright   :  (C) 2015 Futurice
+-- License     :  BSD-3-Clause (see the file LICENSE)
+--
+-- Maintainer  :  Oleg Grenrus <oleg.grenrus@iki.fi>
+--
+ ----------------------------------------------------------------------------
 module Fum2GitHub.Compare (
-    gitHubUsersNotInFum,
-) where
+    gitHubUsersNotInFum
+  ) where
 
-import           Control.Monad
-import           Data.Char
+import           Data.List.Extra
 import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Fum2GitHub.Fum as Fum
-import qualified Fum2GitHub.GitHub as GitHub
+import           Github.Extra as Github
 
-gitHubUsersNotInFum :: [GitHub.OrgMember] -> [Fum.User] -> [GitHub.OrgMember]
+gitHubUsersNotInFum :: [GithubOwner] -> [Fum.User] -> [GithubOwner]
 gitHubUsersNotInFum ghMembers fumUsers =
     filter (not . inFum) ghMembers
     where
 
+    -- Github Logins of users in FUM
     fumList :: [String]
-    fumList = do
-        user <- fumUsers
-        let github = Fum.userGithub user
-        guard $ isJust github
-        return $ map toLower (fromJust github)
+    fumList = mapMaybe (fmap lower . Fum.userGithub) fumUsers 
 
     fumSet :: Set.Set String
     fumSet = Set.fromList fumList
 
-    inFum :: GitHub.OrgMember -> Bool
-    inFum x = Set.member lowerName fumSet
-              where
-              lowerName :: String
-              lowerName = map toLower $ GitHub.getOrgMember x
+    inFum :: GithubOwner -> Bool
+    inFum x = Set.member (lower . githubOwnerLogin $ x) fumSet
