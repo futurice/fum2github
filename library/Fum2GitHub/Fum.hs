@@ -1,76 +1,80 @@
 {-# LANGUAGE OverloadedStrings #-}
+----------------------------------------------------------------------------
+-- |
+-- Module      :  Fum2GitHub.Fum
+-- Copyright   :  (C) 2015 Futurice
+-- License     :  BSD-3-Clause (see the file LICENSE)
+--
+-- Maintainer  :  Oleg Grenrus <oleg.grenrus@iki.fi>
+--
+ ----------------------------------------------------------------------------
 module Fum2GitHub.Fum (
-    AuthToken(..),
-    getAllUsers,
-    User(..),
-    UsersResult(..)
-) where
+  -- * Methods
+    getAllUsers
+  -- * Types
+  , AuthToken(..)
+  , User(..)
+  , UsersResult(..)
+  ) where
 
 import           Control.Applicative
-import           Control.Monad.Trans.Except
-import           Data.Aeson
+import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.Logger
+import           Data.Aeson.Fxtra
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
-import           Fum2GitHub.Types(
-    URL(URL, getURL))
-import           Network.HTTP.Client
-import           Network.HTTP.Client.TLS
-import           System.Log.Logger
+import           Network.HTTP.Client.Fxtra
 
-loggerName :: String
-loggerName = "Fum2GitHub.Fum"
+import           Fum2GitHub.Types (URL(..))
 
 newtype AuthToken = AuthToken { getAuthToken :: String }
-
--- Get the response body from url using authToken.
-getHttp :: URL -> AuthToken -> IO LBS.ByteString
-getHttp url token = do
-    infoM loggerName $ "FUM GET: " ++ getURL url
-    baseReq <- parseUrl $ getURL url
-    let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ getAuthToken token)
-        req = baseReq { requestHeaders = authHeader : requestHeaders baseReq }
-    withManager tlsManagerSettings $ \manager -> do
-      responseBody <$> httpLbs req manager
+    deriving (Eq, Show)
 
 data User = User
-  { userName :: String
-  , userGithub :: Maybe String
-  , userEmail :: Maybe String -- can be empty?
+  { userName    :: !String
+  , userGithub  :: !(Maybe String)
+  , userEmail   :: !(Maybe String) -- can be empty?
   }
   deriving (Eq, Show)
 
 instance FromJSON User where
-  parseJSON = withObject "User object" p
-   where p v = User <$> v .: "username"
-                    <*> (emptyToNothing <$> v .: "github")
-                    <*> v .: "email"
+  parseJSON = withObject "User object" $ \v ->
+    User <$> v .: "username"
+         <*> (emptyToNothing <$> v .: "github")
+         <*> v .: "email"
 
 emptyToNothing :: [a] -> Maybe [a]
 emptyToNothing [] = Nothing
 emptyToNothing x  = Just x
 
 data UsersResult = UsersResult
-  { urUsers :: [User]
-  , urNext :: Maybe URL
-  }
-  deriving (Eq, Show)
+    { urUsers  :: ![User]
+    , urNext   :: !(Maybe URL)
+    }
+    deriving (Eq, Show)
 
 instance FromJSON UsersResult where
-  parseJSON x = withObject "FUM users result object" p x
-    where p v = UsersResult <$> v .: "results"
-                            <*> v .: "next"
+    parseJSON = withObject "FUM users result object" p
+        where p v = UsersResult <$> v .: "results"
+                                <*> v .: "next"
 
-getSingle :: AuthToken -> URL -> ExceptT String IO UsersResult
-getSingle token url = ExceptT $ eitherDecode <$> getHttp url token
+-- | Get all users from the FUM API.
+getAllUsers :: (MonadThrow m, MonadHTTP m, MonadLogger m)
+            => AuthToken -- ^ FUM authentication token
+            -> URL       -- ^ Initial url
+            -> m [User]
+getAllUsers token url = withManager tlsManagerSettings $ \manager ->
+    concat `liftM` getPaginatedResponses manager (reqBuilder token) resParser url
 
-getAll :: AuthToken -> URL -> ExceptT String IO [User]
-getAll token url = do
-  UsersResult users next <- getSingle token url
-  case next of
-    Nothing    -> return users
-    Just next' -> (users ++) <$> getAll token next'
+reqBuilder :: MonadThrow m => AuthToken -> URL -> m Request
+reqBuilder token url = do
+    baseReq <- parseUrl $ getURL url
+    let authHeader = ("Authorization", E.encodeUtf8 . T.pack $ "Token " ++ getAuthToken token)
+    return $ baseReq { requestHeaders = authHeader : requestHeaders baseReq }
 
--- Get all users from the FUM API.
-getAllUsers :: URL -> AuthToken -> IO (Either String [User])
-getAllUsers usersUrl token = runExceptT $ getAll token usersUrl
+resParser :: MonadThrow m => Response LBS.ByteString -> m (Maybe URL, [User])
+resParser res = do
+    UsersResult { urNext = next, urUsers = users } <- throwDecode' $ responseBody res
+    return (next, users)
