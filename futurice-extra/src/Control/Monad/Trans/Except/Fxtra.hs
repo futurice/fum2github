@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Control.Monad.Trans.Except.Extra (
+module Control.Monad.Trans.Except.Fxtra (
     exceptT
   , module Control.Monad.Trans.Except
   ) where

@@ -9,4 +9,4 @@
 /run.sh
 /.cache
 
-/.stack-work/
+.stack-work/

@@ -1,6 +1,8 @@
 resolver: nightly-2015-06-30
 packages:
   - '.'
+  - futurice-extra
+  - github-fxtra
 extra-deps:
   - github-0.13.2
   - failure-0.2.0.3

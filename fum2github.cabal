@@ -1,7 +1,7 @@
 name:                fum2github
-version:             0.1.0.0
+version:             0.0.0.0
 synopsis:            Compare Futurice FUM and GitHub organization users
--- description:
+description:         Currently we print Github users not in FUM
 homepage:            https://github.com/futurice/fum2github
 license:             BSD3
 license-file:        LICENSE
@@ -10,52 +10,20 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  hs-source-dirs:      library, futurice-extra/src, github-fxtra/src
+  hs-source-dirs:      library
   exposed-modules:     Fum2GitHub.Compare,
                        Fum2GitHub.Fum,
-                       Fum2GitHub.Types,
-                       -- futurice-extra
-                       Control.Monad.Caching,
-                       Control.Monad.Caching.ResponseMeta,
-                       Control.Monad.Catch.Fxtra,
-                       Control.Monad.HTTP,
-                       Data.Aeson.Fxtra,
-                       Data.ByteString.Base64.Fxtra,
-                       Data.Swarm,
-                       Network.HTTP.Client.Fxtra,
-                       Options.Applicative.Fxtra,
-                       System.IO.Fxtra,
-                       -- github-extra:
-                       Github.Fxtra
-  build-depends:       SHA,
-                       QuickCheck,
-                       aeson,
+                       Fum2GitHub.Types
+  build-depends:       aeson,
                        base,
-                       base64-bytestring,
-                       bifunctors,
                        bytestring,
-                       case-insensitive,
-                       cereal,
                        containers,
-                       deepseq,
-                       directory,
                        exceptions,
                        extra,
-                       filepath,
-                       github == 0.13.2,
-                       http-client,
-                       http-client-tls,
-                       http-types,
+                       futurice-extra,
+                       github-fxtra,
                        monad-logger,
-                       optparse-applicative,
-                       regex-compat,
-                       stm,
-                       stm-chans,
-                       text,
-                       transformers,
-                       transformers-compat,
-                       unordered-containers,
-                       vector
+                       text
   default-language:    Haskell2010
   ghc-options:         -Wall
 
@@ -63,11 +31,13 @@ executable checker
   hs-source-dirs:      checker
   main-is:             Main.hs
   build-depends:       base,
-                       fum2github,
                        deepseq,
+                       fum2github,
+                       futurice-extra,
+                       github-fxtra,
                        lens,
-                       text,
                        monad-logger,
+                       text,
                        transformers
   default-language:    Haskell2010
   ghc-options:         -Wall -threaded
@@ -79,18 +49,8 @@ test-suite hspec
   build-depends:       aeson,
                        base,
                        fum2github,
+                       github-fxtra,
                        hspec
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-test-suite test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      futurice-extra/test
-  main-is:             Tests.hs
-  build-depends:       base,
-                       cereal,
-                       fum2github,
-                       tasty,
-                       tasty-quickcheck
-  default-language:    Haskell2010
-  ghc-options:         -Wall

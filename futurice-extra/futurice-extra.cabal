@@ -1,0 +1,71 @@
+name:                futurice-extra
+version:             0.0.0.0
+synopsis:            Futurice extras
+description:         Random collections of extras
+homepage:            https://github.com/futurice/fum2github
+license:             BSD3
+license-file:        LICENSE
+author:              Oleg Grenrus
+maintainer:          oleg.grenrus@iki.fi
+copyright:           (c) 2015 Futurice
+category:            Data
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     Control.Monad.Caching
+                       Control.Monad.HTTP,
+                       Control.Monad.Caching.ResponseMeta,
+                       Control.Monad.Catch.Fxtra,
+                       Control.Monad.Trans.Except.Fxtra,
+                       Data.Swarm,
+                       Data.Aeson.Fxtra,
+                       Data.ByteString.Base64.Fxtra,
+                       Network.HTTP.Client.Fxtra,
+                       Options.Applicative.Fxtra,
+                       System.IO.Fxtra
+  other-extensions:    TypeFamilies,
+                       DeriveDataTypeable,
+                       DeriveGeneric,
+                       FlexibleContexts,
+                       OverloadedStrings,
+                       TemplateHaskell,
+                       Safe
+  build-depends:       base >=4.7 && <4.9,
+                       SHA,
+                       QuickCheck,
+                       aeson,
+                       base64-bytestring,
+                       bifunctors,
+                       bytestring,
+                       case-insensitive,
+                       cereal,
+                       deepseq,
+                       directory,
+                       exceptions,
+                       filepath,
+                       http-client,
+                       http-client-tls,
+                       http-types,
+                       monad-logger,
+                       optparse-applicative,
+                       stm,
+                       stm-chans,
+                       text,
+                       transformers,
+                       transformers-compat
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Tests.hs
+  build-depends:       base,
+                       cereal,
+                       futurice-extra,
+                       tasty,
+                       tasty-quickcheck
+  default-language:    Haskell2010
+  ghc-options:         -Wall
