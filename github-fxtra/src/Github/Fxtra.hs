@@ -10,7 +10,7 @@
 -- Maintainer  :  Oleg Grenrus <oleg.grenrus@iki.fi>
 --
 ----------------------------------------------------------------------------
-module Github.Extra (
+module Github.Fxtra (
     membersOf
   , teamsOf
   , membersOfTeam
@@ -51,8 +51,6 @@ import Network.HTTP.Client (applyBasicAuth)
 import Network.HTTP.Client.Fxtra
 import Network.HTTP.Types
 import Text.Regex (mkRegex, matchRegex)
-
-import Debug.Trace
 
 -- Do not export!
 type URL = String

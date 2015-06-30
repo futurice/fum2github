@@ -4,7 +4,7 @@ module Fum2GitHub.CompareSpec (
 
 import qualified Fum2GitHub.Compare as Compare
 import qualified Fum2GitHub.Fum as Fum
-import           Github.Extra as GitHub
+import           Github.Fxtra as GitHub
 import           Test.Hspec (describe, it, shouldBe, Spec)
 
 mockOrgMember :: String -> GithubOwner

@@ -18,7 +18,7 @@ import Data.Text as T
 import           Fum2GitHub.Types
 import           Options.Applicative.Fxtra
 
-import           Github.Extra as Github
+import           Github.Fxtra as Github
 
 -- fumApiUsersUrl fumAuthToken githubOrganisation githubOAuthtoken
 data Opts = Opts

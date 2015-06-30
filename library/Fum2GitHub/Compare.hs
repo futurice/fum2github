@@ -15,7 +15,7 @@ import           Data.List.Extra
 import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Fum2GitHub.Fum as Fum
-import           Github.Extra as Github
+import           Github.Fxtra as Github
 
 gitHubUsersNotInFum :: [GithubOwner] -> [Fum.User] -> [GithubOwner]
 gitHubUsersNotInFum ghMembers fumUsers =
@@ -24,7 +24,7 @@ gitHubUsersNotInFum ghMembers fumUsers =
 
     -- Github Logins of users in FUM
     fumList :: [String]
-    fumList = mapMaybe (fmap lower . Fum.userGithub) fumUsers 
+    fumList = mapMaybe (fmap lower . Fum.userGithub) fumUsers
 
     fumSet :: Set.Set String
     fumSet = Set.fromList fumList
