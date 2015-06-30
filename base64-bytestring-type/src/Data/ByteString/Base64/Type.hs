@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------
 -- |
--- Module      :  Data.ByteString.Base64.Fxtra
+-- Module      :  Data.ByteString.Base64.Type
 -- Copyright   :  (C) 2015 Oleg Grenrus
 -- License     :  BSD-3-Clause (see the file LICENSE)
 --
@@ -8,7 +8,7 @@
 --
 -- 'ByteString64' is a strict 'ByteString' serialised with base64 encoding.
  ----------------------------------------------------------------------------
-module Data.ByteString.Base64.Fxtra (ByteString64(..)) where
+module Data.ByteString.Base64.Type (ByteString64(..), module Data.ByteString) where
 
 import Control.Applicative
 import Data.Aeson

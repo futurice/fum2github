@@ -18,7 +18,7 @@ import Control.Applicative
 import Control.DeepSeq
 import Data.Aeson.Fxtra
 import Data.ByteString as S
-import Data.ByteString.Base64.Fxtra
+import Data.ByteString.Base64.Type
 import Data.CaseInsensitive as CI
 import Data.Data
 import GHC.Generics

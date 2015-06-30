@@ -1,8 +1,11 @@
 resolver: lts-2.16
 packages:
-  - '.'
+  - fum2github
+  - base64-bytestring-type
   - futurice-extra
   - github-fxtra
+  - monad-http
+  - swarm
 extra-deps:
   - github-0.13.2
   - failure-0.2.0.3

@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Data.Aeson.Fxtra as A
+import Data.Aeson as A
 import Data.Serialize as S
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
