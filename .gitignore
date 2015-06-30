@@ -8,3 +8,5 @@
 
 /run.sh
 /.cache
+
+.stack-work/

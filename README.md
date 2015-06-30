@@ -1,8 +1,10 @@
+# fum2github
+
+> Compare Futurice FUM and GitHub Organization users
+
 [![Build Status](https://travis-ci.org/futurice/fum2github.svg?branch=master)](https://travis-ci.org/futurice/fum2github)
 
-# Compare Futurice FUM and GitHub Organization users
-
-# Structure
+## Structure
 
 The server setup uses Docker containers.
 
@@ -13,25 +15,22 @@ The `web` container serves `data/` through port 3001.
 Ansible configures the server's Apache to forward requests for
 `[dev.]fum2github.futurice.com` to the `web` container.
 
-# Setup
-```bash
-cabal update
-cabal sandbox init
-cabal install --only-dependencies --enable-tests
-cabal configure --enable-tests
-cabal build
-cabal test
-```
+## Setup
 
-Create a personal GitHub access token: https://github.com/settings/tokens/new
+Multipackage setup is handler with [stack](https://github.com/commercialhaskell/stack)
 
 ```bash
-cabal run -- https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
-dist/build/checker/checker https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+stack build
+stack test
 ```
 
+(Create a personal GitHub access token](https://github.com/settings/tokens/new)
 
-# Deploy
+```bash
+stack exec checker https://api.fum.futurice.com/users/ «fum-token» futurice «github-token»
+```
+
+## Deploy
 
 This clones the repository from GitHub (it does not use your local repository)
 and deploys the `master` branch.
@@ -53,13 +52,13 @@ Set the FUM and GitHub tokens in `ansible/secrets/yml`:
 cp ansible/secrets.yml.example ansible/secrets.yml
 ```
 
-## Production
+### Production
 
 ```bash
 ansible-playbook ansible/playbook.yml -i ansible/production --ask-become-pass -v -u «remote-username»
 ```
 
-## Local (e.g. for testing)
+### Local (e.g. for testing)
 
 You can use the `Vagrantfile` to create a VM and deploy to it.
 It assumes your public SSH key is in `~/.ssh/id_rsa.pub`
@@ -80,8 +79,7 @@ Make `dev.fum2github.futurice.com` point to `127.0.0.1` e.g. in `/etc/hosts`.
 
 http://dev.fum2github.futurice.com:3000/
 
-
-# Copyright
+## Copyright
 
 Copyright © [Futurice](https://futurice/com),
 published under the BSD 3-clause license.
