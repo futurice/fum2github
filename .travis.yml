@@ -20,14 +20,14 @@ before_install:
 
 install:
   - ./travis_long stack setup --no-terminal
-  - ./travis_long stack build --only-snapshot --no-terminal
+  - ./travis_long stack test --only-snapshot --no-terminal
 
 script:
   - stack test --no-terminal
 
-cache:
-  directories:
-  - $HOME/.stack
+#cache:
+#  directories:
+#  - $HOME/.stack
 
 addons:
   apt:
