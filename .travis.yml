@@ -1,34 +1,38 @@
 # NB: don't set `language: haskell` here
 
-env:
- - STACK_YAML=stack.yaml
- - STACK_YAML=stack-7.10.yaml
+sudo: false
 
 env:
- - GHCVER=7.8.4 STACK_YAML=stack.yaml
- - GHCVER=7.10.1 STACK_YAML=stack-7.10.yaml
+  - GHCVER=7.8.4 STACK_YAML=stack.yaml
+  - GHCVER=7.10.1 STACK_YAML=stack-7.10.yaml
 
 before_install:
- # ghc source
- - travis_retry sudo add-apt-repository -y ppa:hvr/ghc
- # stack source
- - wget -q -O- http://download.fpcomplete.com/ubuntu/fpco.key | sudo apt-key add -
- - echo 'deb http://download.fpcomplete.com/ubuntu/precise stable main' | sudo tee /etc/apt/sources.list.d/fpco.list
- # Install and output versions
- - travis_retry sudo apt-get update
- - travis_retry sudo apt-get install ghc-$GHCVER stack
- - export PATH=/opt/ghc/$GHCVER/bin:$PATH
- - ghc --version
- - stack --version
+  # ghc
+  - export PATH=/opt/ghc/$GHCVER/bin:$PATH
+  # stack
+  - mkdir -p ~/.local/bin
+  - export PATH=~/.local/bin:$PATH
+  - travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.1.0/stack-0.1.1.0-x86_64-linux.gz | gunzip > ~/.local/bin/stack
+  - chmod a+x ~/.local/bin/stack
+  # versions
+  - stack --version
+  - ghc --version
 
 install:
- - ./travis_long stack setup
+  - ./travis_long stack setup --no-terminal
+  - ./travis_long stack build --only-snapshot --no-terminal
 
 script:
- - stack test
+  - stack test --no-terminal
 
 cache:
   directories:
   - $HOME/.stack
 
-# EOF
+addons:
+  apt:
+    sources:
+    - hvr-ghc
+    packages:
+    - ghc-7.8.4
+    - ghc-7.10.1
