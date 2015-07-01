@@ -25,9 +25,9 @@ install:
 script:
   - stack test --no-terminal
 
-#cache:
-#  directories:
-#  - $HOME/.stack
+cache:
+  directories:
+  - $HOME/.stack
 
 addons:
   apt:
