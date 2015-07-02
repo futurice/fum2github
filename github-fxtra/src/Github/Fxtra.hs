@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE Trustworthy #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Github.Extra
