@@ -1,0 +1,16 @@
+resolver: nightly-2015-06-30
+packages:
+  - fum2github
+  - base64-bytestring-type
+  - futurice-extra
+  - github-fxtra
+  - monad-http
+  - swarm
+extra-deps:
+  - github-0.13.2
+  - failure-0.2.0.3
+  - semigroupoids-5.0.0.2
+  - bifunctors-5
+  - profunctors-5.1.1
+  - free-4.12.1
+  - lens-4.11
