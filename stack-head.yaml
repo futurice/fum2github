@@ -1,4 +1,4 @@
-resolver: nightly-2015-06-30
+resolver: nightly-2015-07-06
 packages:
   - fum2github
   - base64-bytestring-type
