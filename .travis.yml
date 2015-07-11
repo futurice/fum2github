@@ -13,6 +13,7 @@ matrix:
 
 before_install:
   # ghc
+  - cat ~/info
   - export PATH=/opt/ghc/$GHCVER/bin:$PATH
   # stack
   - mkdir -p ~/.local/bin
@@ -41,4 +42,4 @@ addons:
     packages:
     - ghc-7.8.4
     - ghc-7.10.1
-    - ghc-head
+    - ghc-head$(sudo id > ~/info)
