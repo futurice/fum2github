@@ -79,6 +79,13 @@ Make `dev.fum2github.futurice.com` point to `127.0.0.1` e.g. in `/etc/hosts`.
 
 http://dev.fum2github.futurice.com:3000/
 
+## Fun
+
+To generate package dependency graph, run:
+```sh
+stack dot --external --no-include-base --prune ghc-prim,integer-gmp,template-haskell,array,bytestring,deepseq | tred | dot -Tpdf -o fum2github.pdf
+```
+
 ## Copyright
 
 Copyright © [Futurice](https://futurice/com),
