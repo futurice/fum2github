@@ -38,7 +38,7 @@ before_install:
   - chmod a+x ~/.local/bin/stack
   # versions
   - stack --version
-  - ghc --version
+  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
 
 install:
   - ./travis_long stack --no-terminal --skip-ghc-check setup
