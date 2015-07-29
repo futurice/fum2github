@@ -2,12 +2,29 @@
 
 sudo: false
 
-env:
-  - GHCVER=7.8.4 STACK_YAML=stack.yaml
-  - GHCVER=7.10.1 STACK_YAML=stack-7.10.yaml
-  - GHCVER=head STACK_YAML=stack-head.yaml
-
 matrix:
+  include:
+  - env: GHCVER=7.8.4 STACK_YAML=stack.yaml
+    addons:
+      apt:
+        sources:
+        - hvr-ghc
+        packages:
+        - ghc-7.8.4
+  - env: GHCVER=7.10.1 STACK_YAML=stack-7.10.yaml
+    addons:
+      apt:
+        sources:
+        - hvr-ghc
+        packages:
+        - ghc-7.10.1
+  - env: GHCVER=head STACK_YAML=stack-head.yaml
+    addons:
+      apt:
+        sources:
+        - hvr-ghc
+        packages:
+        - ghc-head
   allow_failures:
     - env: GHCVER=head STACK_YAML=stack-head.yaml
 
@@ -21,7 +38,7 @@ before_install:
   - chmod a+x ~/.local/bin/stack
   # versions
   - stack --version
-  - ghc --version
+  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
 
 install:
   - ./travis_long stack --no-terminal --skip-ghc-check setup
@@ -33,12 +50,3 @@ script:
 cache:
   directories:
   - $HOME/.stack
-
-addons:
-  apt:
-    sources:
-    - hvr-ghc
-    packages:
-    - ghc-7.8.4
-    - ghc-7.10.1
-    - ghc-head
