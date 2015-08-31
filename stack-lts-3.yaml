@@ -1,4 +1,4 @@
-resolver: lts-3
+resolver: lts-3.3
 packages:
   - fum2github
   - base64-bytestring-type

@@ -37,7 +37,7 @@ matrix:
         - ghc-7.8.4
         - cabal-install-1.18
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-7.8.4  YES'
   - env: GHCVER=7.10.2 CABALVER=1.22 STACK_SOLVER=YES
     addons:
       apt:
@@ -47,7 +47,7 @@ matrix:
         - ghc-7.10.2
         - cabal-install-1.22
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-7.10.2  YES'
   - env: GHCVER=7.8.4 STACK_YAML=stack-lts-2.yaml
     addons:
       apt:
@@ -56,7 +56,7 @@ matrix:
         packages:
         - ghc-7.8.4
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-7.8.4 stack-lts-2.yaml'
   - env: GHCVER=7.10.2 STACK_YAML=stack-lts-3.yaml
     addons:
       apt:
@@ -65,7 +65,7 @@ matrix:
         packages:
         - ghc-7.10.2
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-7.10.2 stack-lts-3.yaml'
   - env: GHCVER=7.10.2 STACK_YAML=stack-nightly.yaml
     addons:
       apt:
@@ -74,7 +74,7 @@ matrix:
         packages:
         - ghc-7.10.2
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-7.10.2 stack-nightly.yaml'
   - env: GHCVER=head CABALVER=1.22 STACK_SOLVER=YES
     addons:
       apt:
@@ -84,7 +84,7 @@ matrix:
         - ghc-head
         - cabal-install-1.22
         - libgmp-dev
-    compiler: ''
+    compiler: ! ': # ghc-head  YES'
   allow_failures:
   - env: GHCVER=head CABALVER=1.22 STACK_SOLVER=YES
 branches:
