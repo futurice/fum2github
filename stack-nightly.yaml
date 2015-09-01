@@ -1,4 +1,4 @@
-resolver: lts-2.17
+resolver: nightly-2015-08-30
 packages:
   - fum2github
   - base64-bytestring-type
@@ -9,4 +9,3 @@ packages:
 extra-deps:
   - github-0.13.2
   - failure-0.2.0.3
-
