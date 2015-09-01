@@ -84,16 +84,16 @@ getMulti :: (MonadThrow m, MonadHTTP m, MonadLogger m, FromJSON a)
           => [URLPart]
           -> Maybe GithubAuth
           -> m [a]
-getMulti parts auth = withManager tlsManagerSettings $ \manager -> do
-  Prelude.concat `liftM` getPaginatedResponses manager (reqBuilder auth) resParser url
+getMulti parts auth =
+  Prelude.concat `liftM` getPaginatedResponses (reqBuilder auth) resParser url
   where url = buildUrl parts
 
 getSingle :: (MonadThrow m, MonadHTTP m, MonadLogger m, FromJSON a)
           => [URLPart]
           -> Maybe GithubAuth
           -> m a
-getSingle parts auth = withManager tlsManagerSettings $ \manager -> do
-  getSingleResponse manager (reqBuilder auth) resParser url
+getSingle parts auth =
+  getSingleResponse (reqBuilder auth) resParser url
   where url = buildUrl parts
 
 -- API calls

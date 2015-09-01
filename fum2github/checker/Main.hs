@@ -8,6 +8,7 @@ import           Control.Monad
 import           Control.Monad.Caching
 import           Control.Monad.Catch.Fxtra
 import           Control.Monad.HTTP
+import           Network.HTTP.Client.Fxtra
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Data.List as L
@@ -86,18 +87,19 @@ defailedOwnerInfo owner = detailedOwnerLogin owner ++ n ++ e
   where n = maybe "" (" : " ++) $ mfilter (/= "") $ detailedOwnerName owner
         e = maybe "" (" : " ++) $ mfilter (/= "") $ detailedOwnerEmail owner
 
-getDetailedOwner :: Opts -> GithubOwner -> IO DetailedOwner
-getDetailedOwner opts name = applyLoggingCaching opts $ Github.userInfoFor (Just $ view githubAuth opts) $ githubOwnerLogin name
+getDetailedOwner :: Manager -> Opts -> GithubOwner -> IO DetailedOwner
+getDetailedOwner manager opts name = flip runHttpT manager $ applyLoggingCaching opts $ Github.userInfoFor (Just $ view githubAuth opts) $ githubOwnerLogin name
 
 -- We need this in IO to use 'swarm'
-getDetailedOwners :: Opts -> [GithubOwner] -> IO [DetailedOwner]
-getDetailedOwners opts = swarm (getDetailedOwner opts)
+getDetailedOwners :: Manager -> Opts -> [GithubOwner] -> IO [DetailedOwner]
+getDetailedOwners manager opts = swarm (getDetailedOwner manager opts)
 
 main' :: Opts -> IO ()
 main' opts = do
-    (fum, github) <- applyLoggingCaching opts $ getData opts
+    manager <- newManager tlsManagerSettings
+    (fum, github) <- flip runHttpT manager $ applyLoggingCaching opts $ getData opts
     let users = Compare.gitHubUsersNotInFum github fum
-    detailedOwners <- getDetailedOwners opts users
+    detailedOwners <- getDetailedOwners manager opts users
     putStrLn $ (show . L.length $ users) ++ "/" ++ (show . L.length $ github) ++ " members of the GitHub organization '" ++ _githubOrg opts ++ "' are not in FUM:"
     putStrLn $ show $ view team opts
     mapM_ (putStrLn . defailedOwnerInfo) detailedOwners

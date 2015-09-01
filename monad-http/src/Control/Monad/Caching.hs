@@ -133,40 +133,35 @@ liftCachingT :: m a -> CachingT m a
 liftCachingT = CachingT . const
 
 instance (MonadIO m, MonadMask m, MonadHTTP m) => MonadHTTP (CachingT m) where
-    type ManagerM (CachingT m) = ManagerM m
-    withManager settings f = CachingT $ \r -> withManager settings $ \x -> runCachingT (f x) r
     withResponse = withResponse0
     brRead x = CachingT $ \r -> brRead (runCachingT x r)
 
 withResponse0 :: (MonadIO m, MonadMask m, MonadHTTP m)
               => Request
-              -> ManagerM (CachingT m)
               -> (Response (BodyReaderM (CachingT m)) -> CachingT m a)
               -> CachingT m a
-withResponse0 req mgr f = CachingT $ \cacheSettings -> withResponse1 cacheSettings req mgr f
+withResponse0 req f = CachingT $ \cacheSettings -> withResponse1 cacheSettings req f
 
 withResponse1 :: (MonadIO m, MonadMask m, MonadHTTP m)
               => Cache m
               -> Request
-              -> ManagerM (CachingT m)
               -> (Response (BodyReaderM (CachingT m)) -> CachingT m a)
               -> m a
-withResponse1 cache req mgr f =
-    withResponse2 cache req mgr $ \res ->
+withResponse1 cache req f =
+    withResponse2 cache req $ \res ->
         runCachingT (f $ fmap liftCachingT res) cache
 
 withResponse2 :: (MonadIO m, MonadMask m, MonadHTTP m)
               => Cache m
               -> Request
-              -> ManagerM (CachingT m)
               -> (Response (BodyReaderM m) -> m a)
               -> m a
-withResponse2 cache req mgr f = do
+withResponse2 cache req f = do
     maybeRes <- cacheGet cache req
     case maybeRes of
         Just res -> f res
-        Nothing  -> do withResponse req mgr $ \res -> cachePut cache req res
-                       withResponse2 cache req mgr f
+        Nothing  -> do withResponse req $ \res -> cachePut cache req res
+                       withResponse2 cache req f
 
 
 -- Internals

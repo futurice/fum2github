@@ -14,6 +14,8 @@ module Control.Monad.HTTP (
   -- * Class
     MonadHTTP(..)
   , BodyReaderM
+  -- * Transformer
+  , HttpT(..)
   -- * Utilities
   , httpLbs
   , brConsume
@@ -23,6 +25,8 @@ module Control.Monad.HTTP (
   ) where
 
 import           Control.Applicative
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Identity
@@ -35,44 +39,29 @@ import           Network.HTTP.Client hiding (Manager, withManager, withResponse,
 type BodyReaderM m = m S.ByteString
 
 class (Applicative m, Monad m) => MonadHTTP m where
-    type ManagerM m :: *
-    withManager :: ManagerSettings -> (ManagerM m -> m a) -> m a
-    withResponse :: Request -> ManagerM m -> (Response (BodyReaderM m) -> m a) -> m a
+    withResponse :: Request -> (Response (BodyReaderM m) -> m a) -> m a
     brRead :: BodyReaderM m -> m S.ByteString
-
-instance MonadHTTP IO where
-    type ManagerM IO = H.Manager
-    withManager = H.withManager
-    withResponse = H.withResponse
-    brRead = H.brRead
 
 -- like in https://hackage.haskell.org/package/exceptions-0.8.0.2/docs/src/Control-Monad-Catch.html#instance%20MonadThrow%20(IdentityT%20m)
 instance MonadHTTP m => MonadHTTP (IdentityT m) where
-    type ManagerM (IdentityT m) = ManagerM m
-    withManager settings f = lift $ withManager settings (runIdentityT . f)
-    withResponse req mgr f = lift $ withResponse req mgr (runIdentityT . f . fmap lift)
+    withResponse req f = lift $ withResponse req (runIdentityT . f . fmap lift)
     brRead = lift . brRead . runIdentityT
 
 instance MonadHTTP m => MonadHTTP (ReaderT r m) where
-    type ManagerM (ReaderT r m) = ManagerM m
-    withManager settings f = ReaderT $ \r -> withManager settings $ \mgr -> runReaderT (f mgr) r
-    withResponse req mgr f = ReaderT $ \r -> withResponse req mgr $ \res -> runReaderT (f $ fmap lift res) r
+    withResponse req f = ReaderT $ \r -> withResponse req $ \res -> runReaderT (f $ fmap lift res) r
     brRead x = ReaderT $ \r -> brRead (runReaderT x r)
 
 instance MonadHTTP m => MonadHTTP (LoggingT m) where
-    type ManagerM (LoggingT m) = ManagerM m
-    withManager settings f = LoggingT $ \r -> withManager settings $ \mgr -> runLoggingT (f mgr) r
-    withResponse req mgr f = LoggingT $ \r -> withResponse req mgr $ \res -> runLoggingT (f $ fmap lift res) r
+    withResponse req f = LoggingT $ \r -> withResponse req $ \res -> runLoggingT (f $ fmap lift res) r
     brRead x = LoggingT $ \r -> brRead (runLoggingT x r)
 
 instance MonadHTTP m => MonadHTTP (NoLoggingT m) where
-    type ManagerM (NoLoggingT m) = ManagerM m
-    withManager settings f = lift $ withManager settings (runNoLoggingT . f)
-    withResponse req mgr f = lift $ withResponse req mgr (runNoLoggingT . f . fmap lift)
+    withResponse req f = lift $ withResponse req (runNoLoggingT . f . fmap lift)
     brRead = lift . brRead . runNoLoggingT
 
-httpLbs :: MonadHTTP m => Request -> ManagerM m -> m (Response L.ByteString)
-httpLbs req man = withResponse req man $ \res -> do
+-- | A convenience wrapper around 'withResponse' which reads in the entire response body and immediately releases resources.
+httpLbs :: MonadHTTP m => Request -> m (Response L.ByteString)
+httpLbs req = withResponse req $ \res -> do
     bss <- brConsume $ responseBody res
     return res { responseBody = L.fromChunks bss }
 
@@ -85,3 +74,52 @@ brConsume brRead' =
         if S.null x
             then return $ front []
             else go (front . (x:))
+
+--
+newtype HttpT m a = HttpT { runHttpT :: H.Manager -> m a }
+
+instance Functor m => Functor (HttpT m) where
+    fmap f = mapHttpT (fmap f)
+
+instance Applicative m => Applicative (HttpT m) where
+    pure    = liftHttpT . pure
+    f <*> v = HttpT $ \r -> runHttpT f r <*> runHttpT v r
+
+instance Monad m => Monad (HttpT m) where
+    return = liftHttpT . return
+    m >>= k  = HttpT $ \r -> do
+        a <- runHttpT m r
+        runHttpT (k a) r
+
+instance MonadIO m => MonadIO (HttpT m) where
+    liftIO = liftHttpT . liftIO
+
+instance MonadThrow m => MonadThrow (HttpT m) where
+    throwM = liftHttpT . throwM
+
+instance MonadCatch m => MonadCatch (HttpT m) where
+    catch m c = HttpT $ \r -> runHttpT m r `catch` \e -> runHttpT (c e) r
+
+instance MonadMask m => MonadMask (HttpT m) where
+    mask a = HttpT $ \r -> mask $ \u -> runHttpT (a $ mapHttpT u) r
+    uninterruptibleMask a = HttpT $ \r -> uninterruptibleMask $ \u -> runHttpT (a $ mapHttpT u) r
+
+instance MonadLogger m => MonadLogger (HttpT m) where
+    monadLoggerLog a b c d = liftHttpT $ monadLoggerLog a b c d
+
+instance MonadLoggerIO m => MonadLoggerIO (HttpT m) where
+    askLoggerIO = liftHttpT askLoggerIO
+
+instance MonadTrans HttpT where
+    lift = liftHttpT
+
+mapHttpT :: (m a -> m b) -> HttpT m a -> HttpT m b
+mapHttpT f m = HttpT $ f . runHttpT m
+
+liftHttpT :: m a -> HttpT m a
+liftHttpT = HttpT . const
+
+-- | TODO: Generalise to MonadIO + MonadMask?
+instance m ~ IO => MonadHTTP (HttpT m) where
+    withResponse req f = HttpT (\mgr -> H.withResponse req mgr (flip runHttpT mgr . f . fmap liftHttpT))
+    brRead br = HttpT $ \mgr ->  H.brRead (runHttpT br mgr)

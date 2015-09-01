@@ -16,8 +16,10 @@ module Network.HTTP.Client.Fxtra (
   , getSingleResponse
   , parseUrl
   , requestUrl
+  , Manager
+  , newManager
+  , tlsManagerSettings
   , module Control.Monad.HTTP
-  , module Network.HTTP.Client.TLS
   ) where
 
 import Control.Applicative
@@ -27,20 +29,19 @@ import Control.Monad.HTTP
 import Data.ByteString.Lazy as L
 import Data.ByteString.Char8 as BSChar8
 import Data.Text as T
-import Network.HTTP.Client (parseUrl)
-import Network.HTTP.Client.TLS
+import Network.HTTP.Client (parseUrl, Manager, newManager)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
 
 -- | Fetch paginated resourses.
 getPaginatedResponses :: (MonadHTTP m, MonadLogger m)
-                      => ManagerM m                                -- ^ Connection manager
-                      -> (a -> m Request)                          -- ^ Request builder
+                      => (a -> m Request)                          -- ^ Request builder
                       -> (Response L.ByteString -> m (Maybe a, b)) -- ^ Response parser into next request data, and parsed response value
                       -> a                                         -- ^ Initial request seed
                       -> m [b]
-getPaginatedResponses manager builder parser = go
+getPaginatedResponses builder parser = go
     where go s = do req <- builder s
                     $logInfo $ T.append "getPaginatedResponses: " $ T.pack $ requestUrl req
-                    res <- httpLbs req manager
+                    res <- httpLbs req
                     (next, v) <- parser res
                     case next of
                         Just next' -> (v :) `liftM` go next'  -- TODO: use fmap with base >=4.8
@@ -48,15 +49,14 @@ getPaginatedResponses manager builder parser = go
 
 -- | Fancier version of 'httpLbs'.
 getSingleResponse :: (MonadHTTP m, MonadLogger m)
-                  => ManagerM m                                -- ^ Connection manager
-                  -> (a -> m Request)                          -- ^ Request builder
+                  => (a -> m Request)                          -- ^ Request builder
                   -> (Response L.ByteString -> m (Maybe a, b)) -- ^ Response parser into next request data, and parsed response value
                   -> a                                         -- ^ Initial request seed
                   -> m b
-getSingleResponse manager builder parser s = do
+getSingleResponse builder parser s = do
   req <- builder s
   $logInfo $ T.append "getSingleResponse: " $ T.pack $ requestUrl req
-  res <- httpLbs req manager
+  res <- httpLbs req
   snd <$> parser res
 
 -- | Short, one line summary of response. Useful for logging
