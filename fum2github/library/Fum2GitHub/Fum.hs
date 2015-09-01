@@ -65,8 +65,8 @@ getAllUsers :: (MonadThrow m, MonadHTTP m, MonadLogger m)
             => AuthToken -- ^ FUM authentication token
             -> URL       -- ^ Initial url
             -> m [User]
-getAllUsers token url = withManager tlsManagerSettings $ \manager ->
-    concat `liftM` getPaginatedResponses manager (reqBuilder token) resParser url
+getAllUsers token url =
+    concat `liftM` getPaginatedResponses (reqBuilder token) resParser url
 
 reqBuilder :: MonadThrow m => AuthToken -> URL -> m Request
 reqBuilder token url = do
