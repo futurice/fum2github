@@ -1,10 +1,10 @@
 resolver: lts-2.22
 packages:
   - fum2github
-  - base64-bytestring-type
   - futurice-extra
   - github-fxtra
   - monad-http
+  - monad-http-fxtra
   - swarm
 extra-deps:
   - github-0.13.2
