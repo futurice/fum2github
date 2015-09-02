@@ -24,6 +24,7 @@ library
                        futurice-extra,
                        http-types,
                        monad-http,
+                       monad-http-fxtra,
                        monad-logger,
                        http-client,
                        regex-compat,

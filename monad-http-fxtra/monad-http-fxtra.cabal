@@ -1,0 +1,40 @@
+-- This file has been generated from package.yaml by hpack version 0.7.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           monad-http-fxtra
+version:        0.0.0.0
+synopsis:       Futurice extras for monad-http
+description:    Futurice extras for monad-http package. HTTP helpers
+category:       Web
+homepage:       https://github.com/futurice/fum2github#readme
+bug-reports:    https://github.com/futurice/fum2github/issues
+author:         Oleg Grenrus <oleg.grenrus@iki.fi>
+maintainer:     Oleg Grenrus <oleg.grenrus@iki.fi>
+license:        BSD3
+tested-with:    GHC==7.8.4, GHC==7.10.2
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/futurice/fum2github
+
+library
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >= 4.7 && <4.9
+    , bytestring
+    , http-client
+    , http-client-tls
+    , monad-http
+    , monad-logger
+    , text
+  exposed-modules:
+      Network.HTTP.Client.Fxtra
+  default-language: Haskell2010
