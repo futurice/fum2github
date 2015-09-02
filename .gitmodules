@@ -1,0 +1,3 @@
+[submodule "monad-http"]
+	path = monad-http
+	url = git@github.com:futurice/haskell-monad-http.git
