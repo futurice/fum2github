@@ -1,7 +1,11 @@
 # This file has been generated -- see https://github.com/phadej/travis-meta-yaml
 sudo: false
 language: c
+git:
+  submodules: false
 before_install:
+- sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+- git submodule update --init --recursive
 - export PATH=/opt/ghc/$GHCVER/bin:$PATH
 - if [ -n "$CABALVER" ]; then export PATH=/opt/cabal/$CABALVER/bin:$PATH; fi
 - export PATH=~/.local/bin:$PATH
