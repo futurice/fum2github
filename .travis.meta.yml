@@ -1,5 +1,14 @@
 language: haskell-stack
 
+git:
+  submodules: false
+
+meta:
+  before_install:
+    prefix:
+      - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+      - git submodule update --init
+
 env:
   - GHCVER=7.8.4 CABALVER=1.18 STACK_SOLVER=YES
   - GHCVER=7.10.2 CABALVER=1.22 STACK_SOLVER=YES
