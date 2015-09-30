@@ -37,7 +37,7 @@ import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.HTTP
 import Control.Monad.Logger
-import Data.Aeson.Fxtra
+import Data.Aeson.Extra
 import Data.ByteString.Char8 as BSChar8
 import Data.ByteString.Lazy as LBS
 import Data.CaseInsensitive as CI
@@ -77,7 +77,7 @@ resParser :: (MonadThrow m, FromJSON a) => Response LBS.ByteString -> m (Maybe U
 resParser res = do
   let body = responseBody res
       hdrs = responseHeaders res
-  value <- throwDecode body
+  value <- decode body
   return (nextUrl hdrs, value)
 
 getMulti :: (MonadThrow m, MonadHTTP m, MonadLogger m, FromJSON a)

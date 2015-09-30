@@ -15,7 +15,6 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Control.Monad.Catch.Fxtra,
                        Control.Monad.Trans.Except.Fxtra,
-                       Data.Aeson.Fxtra,
                        Options.Applicative.Fxtra,
                        System.IO.Fxtra
   other-extensions:    TypeFamilies,
