@@ -1,4 +1,4 @@
-resolver: nightly-2015-09-02
+resolver: nightly-2015-09-29
 packages:
   - fum2github
   - futurice-extra
@@ -9,3 +9,4 @@ packages:
 extra-deps:
   - github-0.13.2
   - failure-0.2.0.3
+  - aeson-extra-0.2.0.0

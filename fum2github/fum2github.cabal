@@ -15,6 +15,7 @@ library
                        Fum2GitHub.Fum,
                        Fum2GitHub.Types
   build-depends:       aeson,
+                       aeson-extra,
                        base,
                        bytestring,
                        containers,

@@ -21,7 +21,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Logger
-import           Data.Aeson.Fxtra
+import           Data.Aeson.Extra
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
@@ -76,5 +76,5 @@ reqBuilder token url = do
 
 resParser :: MonadThrow m => Response LBS.ByteString -> m (Maybe URL, [User])
 resParser res = do
-    UsersResult { urNext = next, urUsers = users } <- throwDecode' $ responseBody res
+    UsersResult { urNext = next, urUsers = users } <- decode' $ responseBody res
     return (next, users)
